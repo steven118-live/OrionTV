@@ -208,18 +208,6 @@ const useHomeStore = create<HomeState>((set, get) => ({
 
         set({ contentData: rowItems, hasMore: false });
       } else if (selectedCategory.type === "tv" && selectedCategory.tag === "动漫") {
-        const animationTags = ["日本动画", "动画", "欧美动画", "国产动画"];
-        const allResults: RowItem[] = [];
-
-        for (const tag of animationTags) {
-          const result = await api.getDoubanData("tv", tag, 20, pageStart);
-          const items = result.list.map((item) => ({
-            ...item,
-            id: item.title,
-            source: "douban",
-          })) as RowItem[];
-          allResults.push(...items);
-        }
 
         const cacheKey = getCacheKey(selectedCategory);
 
