@@ -342,12 +342,14 @@ const createTabletStyles = (cardWidth: number, cardHeight: number, spacing: numb
     },
     episodeBadge: {
       position: "absolute",
-      top: 8,
-      right: 48, // 避開右上角的評分星星
+      top: "50%",
+      left: "50%",
+      transform: [{ translateX: -24 }, { translateY: -10 }],
       backgroundColor: "rgba(0, 0, 0, 0.7)",
       borderRadius: 6,
-      paddingHorizontal: 6,
-      paddingVertical: 3,
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      zIndex: 10,
     },
   });
 };
