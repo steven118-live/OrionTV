@@ -175,7 +175,7 @@ const VideoCardMobile = forwardRef<View, VideoCardMobileProps>(
             <ThemedText numberOfLines={2} style={styles.title}>{title}</ThemedText>
             {isContinueWatching && (
               <ThemedText style={styles.continueLabel} numberOfLines={1}>
-                第{episodeIndex! + 1}集 {Math.round((progress || 0) * 100)}%
+                第{episodeIndex!}集 {Math.round((progress || 0) * 100)}%
               </ThemedText>
             )}
           </View>
@@ -293,7 +293,7 @@ const createMobileStyles = (cardWidth: number, cardHeight: number, spacing: numb
     },
     episodeBadge: {
       position: "absolute",
-      top: "30%",
+      top: "35%",
       left: "50%",
       transform: [{ translateX: -24 }, { translateY: -10 }],
       backgroundColor: "rgba(0, 0, 0, 0.7)",

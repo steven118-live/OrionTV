@@ -342,7 +342,7 @@ const createTabletStyles = (cardWidth: number, cardHeight: number, spacing: numb
     },
     episodeBadge: {
       position: "absolute",
-      top: "30%",
+      top: "35%",
       left: "50%",
       transform: [{ translateX: -24 }, { translateY: -10 }],
       backgroundColor: "rgba(0, 0, 0, 0.7)",
