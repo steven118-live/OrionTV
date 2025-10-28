@@ -44,6 +44,7 @@ const VideoCard = forwardRef<View, VideoCardProps>(
       onRecordDeleted,
       api,
       playTime = 0,
+      totalEpisodes,
     }: VideoCardProps,
     ref
   ) => {
@@ -167,6 +168,16 @@ const VideoCard = forwardRef<View, VideoCardProps>(
         >
           <View style={styles.card}>
             <Image source={{ uri: api.getImageProxyUrl(poster) }} style={styles.poster} />
+
+            {/* 新增集數標籤 */}
+            {episodeIndex !== undefined && totalEpisodes !== undefined && totalEpisodes > 1 && (
+              <View style={styles.episodeBadge}>
+                <Text style={styles.badgeText}>
+                  {episodeIndex}/{totalEpisodes}
+                </Text>
+              </View>
+            )}
+
             {isFocused && (
               <View style={styles.overlay}>
                 {isContinueWatching && (
@@ -359,5 +370,14 @@ const styles = StyleSheet.create({
   continueLabel: {
     color: Colors.dark.primary,
     fontSize: 12,
+  },
+  episodeBadge: {
+    position: "absolute",
+    top: 8,
+    right: 48, // 避開右上角的評分星星
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
   },
 });

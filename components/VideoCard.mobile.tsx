@@ -45,6 +45,7 @@ const VideoCardMobile = forwardRef<View, VideoCardMobileProps>(
       onRecordDeleted,
       api,
       playTime = 0,
+      totalEpisodes,
     }: VideoCardMobileProps,
     ref
   ) => {
@@ -123,7 +124,15 @@ const VideoCardMobile = forwardRef<View, VideoCardMobileProps>(
         >
           <View style={styles.card}>
             <Image source={{ uri: api.getImageProxyUrl(poster) }} style={styles.poster} />
-            
+            {/* 新增集數標籤 */}
+            {episodeIndex !== undefined && totalEpisodes !== undefined && totalEpisodes > 1 && (
+              <View style={styles.episodeBadge}>
+                <Text style={styles.badgeText}>
+                  {episodeIndex}/{totalEpisodes}
+                </Text>
+              </View>
+            )}
+
             {/* 进度条 */}
             {isContinueWatching && (
               <View style={styles.progressContainer}>
@@ -281,6 +290,15 @@ const createMobileStyles = (cardWidth: number, cardHeight: number, spacing: numb
     continueLabel: {
       color: Colors.dark.primary,
       fontSize: 11,
+    },
+    episodeBadge: {
+      position: "absolute",
+      top: 8,
+      right: 48, // 避開右上角的評分星星
+      backgroundColor: "rgba(0, 0, 0, 0.7)",
+      borderRadius: 6,
+      paddingHorizontal: 6,
+      paddingVertical: 3,
     },
   });
 };
