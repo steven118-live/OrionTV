@@ -29,7 +29,20 @@ export interface Category {
 const initialCategories: Category[] = [
   { title: "最近播放", type: "record" },
   { title: "热门剧集", type: "tv", tag: "热门" },
-  { title: "电视剧", type: "tv", tags: ["国产剧", "美剧", "英剧", "韩剧", "日剧", "港剧", "动漫", "纪录片"] },
+  {
+    title: "电视剧",
+    type: "tv",
+    tags: [
+      "国产剧",
+      "美剧",
+      "英剧",
+      "韩剧",
+      "日剧",
+      "港剧",
+      "动漫", // ✅ 替代「日本动画」
+      "纪录片"
+    ],
+  },
   {
     title: "电影",
     type: "movie",
@@ -55,7 +68,6 @@ const initialCategories: Category[] = [
   { title: "豆瓣 Top250", type: "movie", tag: "top250" },
 ];
 
-// 添加缓存项接口
 interface CacheItem {
   data: RowItem[];
   timestamp: number;
@@ -91,7 +103,6 @@ interface HomeState {
   clearError: () => void;
 }
 
-// 内存缓存，应用生命周期内有效
 const dataCache = new Map<string, CacheItem>();
 
 const useHomeStore = create<HomeState>((set, get) => ({
@@ -104,6 +115,46 @@ const useHomeStore = create<HomeState>((set, get) => ({
   hasMore: true,
   error: null,
 
+  selectCategory: (category: Category) => {
+    const currentCategory = get().selectedCategory;
+    const cacheKey = getCacheKey(category);
+
+    const isSameCategory =
+      currentCategory.title === category.title &&
+      currentCategory.tag === category.tag &&
+      JSON.stringify(currentCategory.tags || []) === JSON.stringify(category.tags || []);
+
+    if (!isSameCategory) {
+      set({
+        selectedCategory: category,
+        contentData: [],
+        pageStart: 0,
+        hasMore: true,
+        error: null,
+      });
+
+      if (category.type === "record" || (category.type === "tv" && category.tag === "动漫")) {
+        get().fetchInitialData();
+        return;
+      }
+
+      const cachedData = dataCache.get(cacheKey);
+      if (cachedData && isValidCache(cachedData)) {
+        set({
+          contentData: cachedData.data,
+          pageStart: cachedData.data.length,
+          hasMore: cachedData.hasMore,
+          loading: false,
+        });
+      } else {
+        if (cachedData) {
+          dataCache.delete(cacheKey);
+        }
+        get().fetchInitialData();
+      }
+    }
+  },
+
   fetchInitialData: async () => {
     const { apiBaseUrl } = useSettingsStore.getState();
     await useAuthStore.getState().checkLoginStatus(apiBaseUrl);
@@ -111,23 +162,9 @@ const useHomeStore = create<HomeState>((set, get) => ({
     const { selectedCategory } = get();
     const cacheKey = getCacheKey(selectedCategory);
 
-    // 最近播放不缓存，始终实时获取
     if (selectedCategory.type === 'record') {
       set({ loading: true, contentData: [], pageStart: 0, hasMore: true, error: null });
       await get().loadMoreData();
-      return;
-    }
-
-    // 检查缓存
-    if (dataCache.has(cacheKey) && isValidCache(dataCache.get(cacheKey)!)) {
-      const cachedData = dataCache.get(cacheKey)!;
-      set({
-        loading: false,
-        contentData: cachedData.data,
-        pageStart: cachedData.data.length,
-        hasMore: cachedData.hasMore,
-        error: null
-      });
       return;
     }
 
@@ -167,10 +204,57 @@ const useHomeStore = create<HomeState>((set, get) => ({
               play_time: record.play_time,
             };
           })
-          // .filter((record) => record.progress !== undefined && record.progress > 0 && record.progress < 1)
           .sort((a, b) => (b.lastPlayed || 0) - (a.lastPlayed || 0));
 
         set({ contentData: rowItems, hasMore: false });
+      } else if (selectedCategory.type === "tv" && selectedCategory.tag === "动漫") {
+        const animationTags = ["日本动画", "动画", "欧美动画", "国产动画"];
+        const allResults: RowItem[] = [];
+
+        for (const tag of animationTags) {
+          const result = await api.getDoubanData("tv", tag, 20, pageStart);
+          const items = result.list.map((item) => ({
+            ...item,
+            id: item.title,
+            source: "douban",
+          })) as RowItem[];
+          allResults.push(...items);
+        }
+
+        const cacheKey = getCacheKey(selectedCategory);
+
+        if (pageStart === 0) {
+          const cacheItems = allResults.slice(0, MAX_ITEMS_PER_CACHE);
+          dataCache.set(cacheKey, {
+            data: cacheItems,
+            timestamp: Date.now(),
+            type: "tv",
+            hasMore: true,
+          });
+
+          set({
+            contentData: allResults,
+            pageStart: allResults.length,
+            hasMore: allResults.length !== 0,
+          });
+        } else {
+          const existingCache = dataCache.get(cacheKey);
+          if (existingCache && existingCache.data.length < MAX_ITEMS_PER_CACHE) {
+            const updatedData = [...existingCache.data, ...allResults];
+            const limitedCacheData = updatedData.slice(0, MAX_ITEMS_PER_CACHE);
+            dataCache.set(cacheKey, {
+              ...existingCache,
+              data: limitedCacheData,
+              hasMore: true,
+            });
+          }
+
+          set((state) => ({
+            contentData: [...state.contentData, ...allResults],
+            pageStart: state.pageStart + allResults.length,
+            hasMore: allResults.length !== 0,
+          }));
+        }
       } else if (selectedCategory.type && selectedCategory.tag) {
         const result = await api.getDoubanData(
           selectedCategory.type,
@@ -188,53 +272,42 @@ const useHomeStore = create<HomeState>((set, get) => ({
         const cacheKey = getCacheKey(selectedCategory);
 
         if (pageStart === 0) {
-          // 清理过期缓存
           for (const [key, value] of dataCache.entries()) {
             if (!isValidCache(value)) {
               dataCache.delete(key);
             }
           }
 
-          // 如果缓存太大，删除最旧的项
           if (dataCache.size >= MAX_CACHE_SIZE) {
             const oldestKey = Array.from(dataCache.keys())[0];
             dataCache.delete(oldestKey);
           }
 
-          // 限制缓存的数据条目数，但不限制显示的数据
           const cacheItems = newItems.slice(0, MAX_ITEMS_PER_CACHE);
-
-          // 存储新缓存
           dataCache.set(cacheKey, {
             data: cacheItems,
             timestamp: Date.now(),
             type: selectedCategory.type,
-            hasMore: true // 始终为 true，因为我们允许继续加载
+            hasMore: true,
           });
 
           set({
-            contentData: newItems, // 使用完整的新数据
+            contentData: newItems,
             pageStart: newItems.length,
             hasMore: result.list.length !== 0,
           });
         } else {
-          // 增量加载时更新缓存
           const existingCache = dataCache.get(cacheKey);
-          if (existingCache) {
-            // 只有当缓存数据少于最大限制时才更新缓存
-            if (existingCache.data.length < MAX_ITEMS_PER_CACHE) {
-              const updatedData = [...existingCache.data, ...newItems];
-              const limitedCacheData = updatedData.slice(0, MAX_ITEMS_PER_CACHE);
-
-              dataCache.set(cacheKey, {
-                ...existingCache,
-                data: limitedCacheData,
-                hasMore: true // 始终为 true，因为我们允许继续加载
-              });
-            }
+          if (existingCache && existingCache.data.length < MAX_ITEMS_PER_CACHE) {
+            const updatedData = [...existingCache.data, ...newItems];
+            const limitedCacheData = updatedData.slice(0, MAX_ITEMS_PER_CACHE);
+            dataCache.set(cacheKey, {
+              ...existingCache,
+              data: limitedCacheData,
+              hasMore: true,
+            });
           }
 
-          // 更新状态时使用所有数据
           set((state) => ({
             contentData: [...state.contentData, ...newItems],
             pageStart: state.pageStart + newItems.length,
@@ -242,7 +315,6 @@ const useHomeStore = create<HomeState>((set, get) => ({
           }));
         }
       } else if (selectedCategory.tags) {
-        // It's a container category, do not load content, but clear current content
         set({ contentData: [], hasMore: false });
       } else {
         set({ hasMore: false });
@@ -272,42 +344,6 @@ const useHomeStore = create<HomeState>((set, get) => ({
     }
   },
 
-  selectCategory: (category: Category) => {
-    const currentCategory = get().selectedCategory;
-    const cacheKey = getCacheKey(category);
-
-    if (currentCategory.title !== category.title || currentCategory.tag !== category.tag) {
-      set({
-        selectedCategory: category,
-        contentData: [],
-        pageStart: 0,
-        hasMore: true,
-        error: null
-      });
-
-      if (category.type === 'record') {
-        get().fetchInitialData();
-        return;
-      }
-
-      const cachedData = dataCache.get(cacheKey);
-      if (cachedData && isValidCache(cachedData)) {
-        set({
-          contentData: cachedData.data,
-          pageStart: cachedData.data.length,
-          hasMore: cachedData.hasMore,
-          loading: false
-        });
-      } else {
-        // 删除过期缓存
-        if (cachedData) {
-          dataCache.delete(cacheKey);
-        }
-        get().fetchInitialData();
-      }
-    }
-  },
-
   refreshPlayRecords: async () => {
     const { apiBaseUrl } = useSettingsStore.getState();
     await useAuthStore.getState().checkLoginStatus(apiBaseUrl);
@@ -326,8 +362,10 @@ const useHomeStore = create<HomeState>((set, get) => ({
       });
       return;
     }
+
     const records = await PlayRecordManager.getAll();
     const hasRecords = Object.keys(records).length > 0;
+
     set((state) => {
       const recordCategoryExists = state.categories.some((c) => c.type === "record");
       if (hasRecords && !recordCategoryExists) {
