@@ -373,7 +373,7 @@ const styles = StyleSheet.create({
   },
   episodeBadge: {
     position: "absolute",
-    top: "50%",
+    top: "30%",
     left: "50%",
     transform: [{ translateX: -24 }, { translateY: -10 }],
     backgroundColor: "rgba(0, 0, 0, 0.7)",
