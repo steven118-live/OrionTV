@@ -221,7 +221,7 @@ export class API {
 
       return {
         code: 0,
-        message: "merged",
+        message: "",
         list: allItems,
       };
     }
