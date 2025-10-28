@@ -206,16 +206,20 @@ export class API {
     pageSize: number = 16,
     pageStart: number = 0
   ): Promise<DoubanResponse> {
-    if (type === "tv" && tag === "动漫") {
+    if (type === "tv" && (tag === "动漫" || tag === "tv_animation")) {
       const tags = ["动画", "日本动画", "国产动画", "欧美动画"];
       const allItems: DoubanItem[] = [];
 
       for (const t of tags) {
-        const url = `/api/douban?type=${type}&tag=${encodeURIComponent(t)}&pageSize=${pageSize}&pageStart=0`;
-        const response = await this._fetch(url);
-        const json = await response.json();
-        if (json.list?.length > 0) {
-          allItems.push(...json.list);
+        try {
+          const url = `/api/douban?type=tv&tag=${encodeURIComponent(t)}&pageSize=${pageSize}&pageStart=0`;
+          const response = await this._fetch(url);
+          const json = await response.json();
+          if (json.list?.length > 0) {
+            allItems.push(...json.list);
+          }
+        } catch (e) {
+          console.warn(`查詢 ${t} 失敗`, e);
         }
       }
 
