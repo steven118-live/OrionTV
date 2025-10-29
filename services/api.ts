@@ -213,7 +213,7 @@ export class API {
 
       for (const t of tags) {
         try {
-          const url = `/api/douban?type=${type}&tag=${encodeURIComponent(tag)}&pageSize=${pageSize}&pageStart=${pageStart}`;
+          const url = `/api/douban?type=${type}&tag=${encodeURIComponent(t)}&pageSize=${pageSize}&pageStart=${pageStart}`;
           const response = await this._fetch(url);
           const json = await response.json();
           console.log(`查詢 ${t} 回傳 ${json.list?.length || 0} 筆`);
