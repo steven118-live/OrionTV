@@ -206,6 +206,36 @@ export class API {
     pageSize: number = 16,
     pageStart: number = 0
   ): Promise<DoubanResponse> {
+    if (type === "tv" && tag === "动画") {
+      const tags = ["动画", "日本动画", "国产动漫", "欧美动画"];
+      const seenTitles = new Set<string>();
+      const allItems: DoubanItem[] = [];
+
+      for (const t of tags) {
+        try {
+          const url = `/api/douban?type=${type}&tag=${encodeURIComponent(tag)}&pageSize=${pageSize}&pageStart=${pageStart}`;
+          const response = await this._fetch(url);
+          const json = await response.json();
+          console.log(`查詢 ${t} 回傳 ${json.list?.length || 0} 筆`);
+          if (json.list?.length > 0) {
+            for (const item of json.list) {
+              if (item.poster && !seenTitles.has(item.title)) {
+                seenTitles.add(item.title);
+                allItems.push(item);
+              }
+            }
+          }
+        } catch (e) {
+          console.warn(`查詢 ${t} 失敗`, e);
+        }
+      }
+
+      return {
+        code: 0,
+        message: "",
+        list: allItems,
+      };
+    }
     const url = `/api/douban?type=${type}&tag=${encodeURIComponent(tag)}&pageSize=${pageSize}&pageStart=${pageStart}`;
     const response = await this._fetch(url);
     return response.json();
