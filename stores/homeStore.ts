@@ -30,9 +30,8 @@ const initialCategories: Category[] = [
   { title: "最近播放", type: "record" },
   { title: "热门剧集", type: "tv", tag: "热门" },
   { title: "电视剧", type: "tv", tags: ["国产剧", "美剧", "英剧", "韩剧", "日剧", "港剧", "纪录片"] },
-  { title: "动漫", type: "tv", tags: ["animation", "日本动画"] },  
+  { title: "动漫", type: "tv", tags: ["animation", "日本动画"] },
   { title: "电影", type: "movie", tags: ["热门", "最新", "经典", "豆瓣高分", "冷门佳片", "华语", "欧美", "韩国", "日本", "动作", "喜剧", "爱情", "科幻", "悬疑", "恐怖"] },
-  
   { title: "综艺", type: "tv", tag: "综艺" },
   { title: "豆瓣 Top250", type: "movie", tag: "top250" },
 ];
