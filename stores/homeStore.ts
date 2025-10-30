@@ -29,7 +29,8 @@ export interface Category {
 const initialCategories: Category[] = [
   { title: "最近播放", type: "record" },
   { title: "热门剧集", type: "tv", tag: "热门" },
-  { title: "电视剧", type: "tv", tags: ["国产剧", "美剧", "英剧", "韩剧", "日剧", "港剧", "日本动画","动画","纪录片"] },
+  { title: "电视剧", type: "tv", tags: ["国产剧", "美剧", "英剧", "韩剧", "日剧", "港剧","纪录片"] },
+  { title: "动漫", type: "tv", tag: "tv_animation" },
   {
     title: "电影",
     type: "movie",
