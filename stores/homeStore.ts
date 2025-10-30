@@ -40,7 +40,7 @@ const initialCategories: Category[] = [
 interface CacheItem {
   data: RowItem[];
   timestamp: number;
-  type: 'movie' | 'tv' | 'record';
+  type: 'movie' | 'tv' | 'record' | '动漫';
   hasMore: boolean;
 }
 
