@@ -21,7 +21,7 @@ export type RowItem = (SearchResult | PlayRecord) & {
 
 export interface Category {
   title: string;
-  type?: "movie" | "tv" | "record" | "动漫";
+  type?: "movie" | "tv" | "record";
   tag?: string;
   tags?: string[];
 }
@@ -30,7 +30,7 @@ const initialCategories: Category[] = [
   { title: "最近播放", type: "record" },
   { title: "热门剧集", type: "tv", tag: "热门" },
   { title: "电视剧", type: "tv", tags: ["国产剧", "美剧", "英剧", "韩剧", "日剧", "港剧", "纪录片"] },
-  { title: "动漫", type: "动漫", tags: ["日本动画", "国产动画", "欧美动画", "tv_animation", "动漫", "动画" ] },
+  { title: "动漫", type: "tv", tags: ["日本动画", "国产动画", "欧美动画"] },
   { title: "电影", type: "movie", tags: ["热门", "最新", "经典", "豆瓣高分", "冷门佳片", "华语", "欧美", "韩国", "日本", "动作", "喜剧", "爱情", "科幻", "悬疑", "恐怖"] },
   { title: "综艺", type: "tv", tag: "综艺" },
   { title: "豆瓣 Top250", type: "movie", tag: "top250" },
@@ -40,7 +40,7 @@ const initialCategories: Category[] = [
 interface CacheItem {
   data: RowItem[];
   timestamp: number;
-  type: 'movie' | 'tv' | 'record' | '动漫';
+  type: 'movie' | 'tv' | 'record';
   hasMore: boolean;
 }
 
