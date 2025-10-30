@@ -21,7 +21,7 @@ export type RowItem = (SearchResult | PlayRecord) & {
 
 export interface Category {
   title: string;
-  type?: "movie" | "tv" | "record";
+  type?: "movie" | "tv" | "record" | "动漫";
   tag?: string;
   tags?: string[];
 }
