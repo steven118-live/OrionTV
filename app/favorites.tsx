@@ -11,7 +11,7 @@ import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
 import { getCommonResponsiveStyles } from "@/utils/ResponsiveStyles";
 import ResponsiveNavigation from "@/components/navigation/ResponsiveNavigation";
 import ResponsiveHeader from "@/components/navigation/ResponsiveHeader";
-import Logger from "@/debug/logger";
+import Logger from "../src/debug/logger";
 import { logLineShort } from "@/debug/utils/devLog";
 
 
