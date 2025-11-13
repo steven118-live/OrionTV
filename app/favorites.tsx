@@ -11,8 +11,8 @@ import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
 import { getCommonResponsiveStyles } from "@/utils/ResponsiveStyles";
 import ResponsiveNavigation from "@/components/navigation/ResponsiveNavigation";
 import ResponsiveHeader from "@/components/navigation/ResponsiveHeader";
-import Logger from "@/utils/Logger";
-import { logLineShort } from "@/utils/devLog";
+import Logger from "@/debug/logger";
+import { logLineShort } from "@/debug/utils/devLog";
 
 const favLogger = Logger.withTag("Favorites");
 
