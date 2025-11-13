@@ -8,7 +8,7 @@ import { ThemedText } from "@/components/ThemedText";
 import { Colors } from "@/constants/Colors";
 import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
 import { DeviceUtils } from "@/utils/DeviceUtils";
-import Logger from "@/debug/logger";
+import Logger from "../utils/Logger";
 import { logLineShort } from "@/debug/utils/devLog";
 
 const logger = Logger.withTag('VideoCardTablet');
