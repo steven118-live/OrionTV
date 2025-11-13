@@ -14,6 +14,7 @@ import ResponsiveHeader from "@/components/navigation/ResponsiveHeader";
 import Logger from "@/debug/logger";
 import { logLineShort } from "@/debug/utils/devLog";
 
+
 const favLogger = Logger.withTag("Favorites");
 
 export default function FavoritesScreen() {
