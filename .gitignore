@@ -25,4 +25,4 @@ web/**
 .kilocodemodes
 .roomodes
 yarn-errors.log
-coverage/
+coverage/tools/
