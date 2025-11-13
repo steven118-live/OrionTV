@@ -1,5 +1,19 @@
+// src/App.tsx — 放在最上方，且在任何會使用 debug 的模組 import 前
+if (__DEV__) {
+  (global as any).DEBUG_FLAGS = (global as any).DEBUG_FLAGS ?? {};
+  (global as any).DEBUG_FLAGS.line_trace = true;
+
+  // 可選：把 util 掛到 global 以便在 console 直接呼叫（非必要）
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    (global as any).__devLog = require("@/utils/devLog").logLineShort;
+  } catch {
+    //
+  }
+}
+
 import React, { useEffect, useCallback, useRef, useState } from "react";
-import { View, StyleSheet, ActivityIndicator, FlatList, Pressable, Animated, StatusBar, Platform, BackHandler, ToastAndroid } from "react-native";
+import { AppState, View, StyleSheet, ActivityIndicator, FlatList, Pressable, Animated, StatusBar, Platform, BackHandler, ToastAndroid } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
@@ -16,8 +30,17 @@ import { getCommonResponsiveStyles } from "@/utils/ResponsiveStyles";
 import ResponsiveNavigation from "@/components/navigation/ResponsiveNavigation";
 import { useApiConfig, getApiConfigErrorMessage } from "@/hooks/useApiConfig";
 import { Colors } from "@/constants/Colors";
+import DebugOverlay from "../src/debug/DebugOverlay";
+import { startDebugOverlay } from "../src/debug/debugLauncher";
 
 const LOAD_MORE_THRESHOLD = 200;
+
+function pushDebugLine(msg: string) {
+  try {
+    // @ts-ignore
+    if (typeof globalThis.__pushAppDebug === "function") globalThis.__pushAppDebug(msg);
+  } catch (_) {}
+}
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -53,44 +76,47 @@ export default function HomeScreen() {
     }, [refreshPlayRecords])
   );
 
-    // 双击返回退出逻辑（只限当前页面）
+  useEffect(() => {
+    if (categories.length > 0) {
+      const hotCategory = categories.find((c) => c.title === "熱門劇集");
+      if (hotCategory) {
+        selectCategory(hotCategory);
+      }
+    }
+  }, [categories, selectCategory]);
+
+  // 双击返回退出逻辑（只限当前页面）
   const backPressTimeRef = useRef<number | null>(null);
 
   useFocusEffect(
     useCallback(() => {
-    const handleBackPress = () => {
-      const now = Date.now();
+      const handleBackPress = () => {
+        const now = Date.now();
 
-      // 如果还没按过返回键，或距离上次超过2秒
-      if (!backPressTimeRef.current || now - backPressTimeRef.current > 2000) {
-        backPressTimeRef.current = now;
-        ToastAndroid.show("再按一次返回键退出", ToastAndroid.SHORT);
-        return true; // 拦截返回事件，不退出
-      }
+        if (!backPressTimeRef.current || now - backPressTimeRef.current > 2000) {
+          backPressTimeRef.current = now;
+          ToastAndroid.show("再按一次返回键退出", ToastAndroid.SHORT);
+          return true;
+        }
 
-      // 两次返回键间隔小于2秒，退出应用
-      BackHandler.exitApp();
-      return true;
-    };
-
-    // 仅限 Android 平台启用此功能
-    if (Platform.OS === "android") {
-      const backHandler = BackHandler.addEventListener("hardwareBackPress", handleBackPress);
-
-      // 返回首页时重置状态
-      return () => {
-        backHandler.remove();
-        backPressTimeRef.current = null;
+        BackHandler.exitApp();
+        return true;
       };
-    }
-  }, [])
-);
+
+      if (Platform.OS === "android") {
+        const backHandler = BackHandler.addEventListener("hardwareBackPress", handleBackPress);
+        return () => {
+          backHandler.remove();
+          backPressTimeRef.current = null;
+        };
+      }
+    }, [])
+  );
 
   // 统一的数据获取逻辑
   useEffect(() => {
     if (!selectedCategory) return;
 
-    // 如果是容器分类且没有选择标签，设置默认标签
     if (selectedCategory.tags && !selectedCategory.tag) {
       const defaultTag = selectedCategory.tags[0];
       setSelectedTag(defaultTag);
@@ -98,14 +124,10 @@ export default function HomeScreen() {
       return;
     }
 
-    // 只有在API配置完成且分类有效时才获取数据
     if (apiConfigStatus.isConfigured && !apiConfigStatus.needsConfiguration) {
-      // 对于有标签的分类，需要确保有标签才获取数据
       if (selectedCategory.tags && selectedCategory.tag) {
         fetchInitialData();
-      }
-      // 对于无标签的分类，直接获取数据
-      else if (!selectedCategory.tags) {
+      } else if (!selectedCategory.tags) {
         fetchInitialData();
       }
     }
@@ -138,11 +160,13 @@ export default function HomeScreen() {
   }, [loading, contentData.length, fadeAnim]);
 
   const handleCategorySelect = (category: Category) => {
+    pushDebugLine(`[CATEGORY_SELECT] ${category.title}`);
     setSelectedTag(null);
     selectCategory(category);
   };
 
   const handleTagSelect = (tag: string) => {
+    pushDebugLine(`[TAG_SELECT] ${tag}`);
     setSelectedTag(tag);
     if (selectedCategory) {
       const categoryWithTag = { ...selectedCategory, tag: tag };
@@ -157,71 +181,101 @@ export default function HomeScreen() {
         text={item.title}
         onPress={() => handleCategorySelect(item)}
         isSelected={isSelected}
-        style={dynamicStyles.categoryButton}
-        textStyle={dynamicStyles.categoryText}
+        style={dynamicStyles?.categoryButton}
+        textStyle={dynamicStyles?.categoryText}
       />
     );
   };
 
-  const renderContentItem = ({ item }: { item: RowItem; index: number }) => (
-    <VideoCard
-      id={item.id}
-      source={item.source}
-      title={item.title}
-      poster={item.poster}
-      year={item.year}
-      rate={item.rate}
-      progress={item.progress}
-      playTime={item.play_time}
-      episodeIndex={item.episodeIndex}
-      sourceName={item.sourceName}
-      totalEpisodes={item.totalEpisodes}
-      api={api}
-      onRecordDeleted={fetchInitialData}
-    />
-  );
+  const onContentPressDebug = (item: RowItem) => {
+    pushDebugLine(`[CONTENT_SELECT] ${item.source}+${item.id} title=${item.title}`);
+  };
+
+  const renderContentItem = ({ item }: { item: RowItem; index: number }) => {
+    pushDebugLine(`[CONTENT_RENDER] ${item.source}+${item.id} title=${item.title}`);
+
+    return (
+      <VideoCard
+        id={item.id}
+        source={item.source}
+        title={item.title}
+        poster={item.poster}
+        year={item.year}
+        rate={item.rate}
+        progress={item.progress}
+        playTime={item.play_time}
+        episodeIndex={item.episodeIndex}
+        sourceName={item.sourceName}
+        totalEpisodes={item.totalEpisodes}
+        api={api}
+        onRecordDeleted={fetchInitialData}
+        onPress={() => onContentPressDebug(item)}
+      />
+    );
+  };
 
   const renderFooter = () => {
     if (!loadingMore) return null;
     return <ActivityIndicator style={{ marginVertical: 20 }} size="large" />;
   };
 
-  // 检查是否需要显示API配置提示
   const shouldShowApiConfig = apiConfigStatus.needsConfiguration && selectedCategory && !selectedCategory.tags;
 
-  // TV端和平板端的顶部导航
   const renderHeader = () => {
-    if (deviceType === "mobile") {
-      // 移动端不显示顶部导航，使用底部Tab导航
-      return null;
-    }
+    if (deviceType === "mobile") return null;
 
     return (
       <View style={dynamicStyles.headerContainer}>
         <View style={{ flexDirection: "row", alignItems: "center" }}>
           <ThemedText style={dynamicStyles.headerTitle}>首页</ThemedText>
-          <Pressable android_ripple={Platform.isTV || deviceType !== 'tv'? { color: 'transparent' } : { color: Colors.dark.link }} style={{ marginLeft: 20 }} onPress={() => router.push("/live")}>
-            {({ focused }) => (
-              <ThemedText style={[dynamicStyles.headerTitle, { color: focused ? "white" : "grey" }]}>直播</ThemedText>
-            )}
+          <Pressable
+            android_ripple={Platform.isTV || deviceType !== "tv" ? { color: "transparent" } : { color: Colors.dark.link }}
+            style={{ marginLeft: 20 }}
+            onPress={() => router.push("/live")}
+          >
+            {({ focused }) => <ThemedText style={[dynamicStyles.headerTitle, { color: focused ? "white" : "grey" }]}>直播</ThemedText>}
           </Pressable>
         </View>
         <View style={dynamicStyles.rightHeaderButtons}>
-          <StyledButton style={dynamicStyles.iconButton} onPress={() => router.push("/favorites")} variant="ghost">
+          <StyledButton
+            style={dynamicStyles.iconButton}
+            onPress={() => {
+              pushDebugLine("[NAV_FAVORITES_CLICK]");
+              router.push("/favorites");
+            }}
+            variant="ghost"
+          >
             <Heart color={colorScheme === "dark" ? "white" : "black"} size={24} />
           </StyledButton>
           <StyledButton
             style={dynamicStyles.iconButton}
-            onPress={() => router.push({ pathname: "/search" })}
+            onPress={() => {
+              pushDebugLine("[NAV_SEARCH_CLICK]");
+              router.push({ pathname: "/search" });
+            }}
             variant="ghost"
           >
             <Search color={colorScheme === "dark" ? "white" : "black"} size={24} />
           </StyledButton>
-          <StyledButton style={dynamicStyles.iconButton} onPress={() => router.push("/settings")} variant="ghost">
+          <StyledButton
+            style={dynamicStyles.iconButton}
+            onPress={() => {
+              pushDebugLine("[NAV_SETTINGS_CLICK]");
+              router.push("/settings");
+            }}
+            variant="ghost"
+          >
             <Settings color={colorScheme === "dark" ? "white" : "black"} size={24} />
           </StyledButton>
           {isLoggedIn && (
-            <StyledButton style={dynamicStyles.iconButton} onPress={logout} variant="ghost">
+            <StyledButton
+              style={dynamicStyles.iconButton}
+              onPress={() => {
+                pushDebugLine("[NAV_LOGOUT_CLICK]");
+                logout();
+              }}
+              variant="ghost"
+            >
               <LogOut color={colorScheme === "dark" ? "white" : "black"} size={24} />
             </StyledButton>
           )}
@@ -230,7 +284,6 @@ export default function HomeScreen() {
     );
   };
 
-  // 动态样式
   const dynamicStyles = StyleSheet.create({
     container: {
       flex: 1,
@@ -266,7 +319,7 @@ export default function HomeScreen() {
       paddingHorizontal: deviceType === "tv" ? spacing / 4 : spacing / 2,
       paddingVertical: spacing / 2,
       borderRadius: deviceType === "mobile" ? 6 : 8,
-      marginHorizontal: deviceType === "tv" ? spacing / 4 : spacing / 2, // TV端使用更小的间距
+      marginHorizontal: deviceType === "tv" ? spacing / 4 : spacing / 2,
     },
     categoryText: {
       fontSize: deviceType === "mobile" ? 14 : 16,
@@ -279,13 +332,10 @@ export default function HomeScreen() {
 
   const content = (
     <ThemedView style={[commonStyles.container, dynamicStyles.container]}>
-      {/* 状态栏 */}
       {deviceType === "mobile" && <StatusBar barStyle="light-content" />}
 
-      {/* 顶部导航 */}
       {renderHeader()}
 
-      {/* 分类选择器 */}
       <View style={dynamicStyles.categoryContainer}>
         <FlatList
           data={categories}
@@ -297,7 +347,6 @@ export default function HomeScreen() {
         />
       </View>
 
-      {/* 子分类标签 */}
       {selectedCategory && selectedCategory.tags && (
         <View style={dynamicStyles.categoryContainer}>
           <FlatList
@@ -324,7 +373,6 @@ export default function HomeScreen() {
         </View>
       )}
 
-      {/* 内容网格 */}
       {shouldShowApiConfig ? (
         <View style={commonStyles.center}>
           <ThemedText type="subtitle" style={{ padding: spacing, textAlign: "center" }}>
@@ -334,15 +382,11 @@ export default function HomeScreen() {
       ) : apiConfigStatus.isValidating ? (
         <View style={commonStyles.center}>
           <ActivityIndicator size="large" />
-          <ThemedText type="subtitle" style={{ padding: spacing, textAlign: "center" }}>
-            正在验证服务器配置...
-          </ThemedText>
+          <ThemedText type="subtitle" style={{ padding: spacing, textAlign: "center" }}>正在验证服务器配置...</ThemedText>
         </View>
       ) : apiConfigStatus.error && !apiConfigStatus.isValid ? (
         <View style={commonStyles.center}>
-          <ThemedText type="subtitle" style={{ padding: spacing, textAlign: "center" }}>
-            {apiConfigStatus.error}
-          </ThemedText>
+          <ThemedText type="subtitle" style={{ padding: spacing, textAlign: "center" }}>{apiConfigStatus.error}</ThemedText>
         </View>
       ) : loading ? (
         <View style={commonStyles.center}>
@@ -350,9 +394,7 @@ export default function HomeScreen() {
         </View>
       ) : error ? (
         <View style={commonStyles.center}>
-          <ThemedText type="subtitle" style={{ padding: spacing }}>
-            {error}
-          </ThemedText>
+          <ThemedText type="subtitle" style={{ padding: spacing }}>{error}</ThemedText>
         </View>
       ) : (
         <Animated.View style={[dynamicStyles.contentContainer, { opacity: fadeAnim }]}>
@@ -372,10 +414,21 @@ export default function HomeScreen() {
     </ThemedView>
   );
 
-  // 根据设备类型决定是否包装在响应式导航中
   if (deviceType === "tv") {
-    return content;
+    return (
+      <>
+        {content}
+        {/* @ts-ignore */}
+        {globalThis["__DEBUG_OVERLAY_ENABLED__"] ? <DebugOverlay /> : null}
+      </>
+    );
   }
 
-  return <ResponsiveNavigation>{content}</ResponsiveNavigation>;
+  return (
+    <>
+      <ResponsiveNavigation>{content}</ResponsiveNavigation>
+      {/* @ts-ignore */}
+      {globalThis["__DEBUG_OVERLAY_ENABLED__"] ? <DebugOverlay /> : null}
+    </>
+  );
 }

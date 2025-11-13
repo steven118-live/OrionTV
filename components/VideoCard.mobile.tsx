@@ -9,6 +9,7 @@ import { Colors } from "@/constants/Colors";
 import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
 import { DeviceUtils } from "@/utils/DeviceUtils";
 import Logger from '@/utils/Logger';
+import { logLineShort } from "@/utils/devLog";
 
 const logger = Logger.withTag('VideoCardMobile');
 
@@ -45,9 +46,14 @@ const VideoCardMobile = forwardRef<View, VideoCardMobileProps>(
       onRecordDeleted,
       api,
       playTime = 0,
+      totalEpisodes,
     }: VideoCardMobileProps,
     ref
   ) => {
+    // debug: 印行號短碼（按需）
+    logLineShort("VideoCardMobile#entry");
+    logger.info(`[5000] VideoCardMobile mount - id=${id} source=${source} title=${String(title)}`);
+
     const router = useRouter();
     const { cardWidth, cardHeight, spacing } = useResponsiveLayout();
     const [fadeAnim] = useState(new Animated.Value(0));
@@ -55,8 +61,13 @@ const VideoCardMobile = forwardRef<View, VideoCardMobileProps>(
     const longPressTriggered = useRef(false);
 
     const handlePress = () => {
+      // debug: 印行號短碼（按需）
+      logLineShort("VideoCardMobile#handlePress");
+      logger.info(`[5001] handlePress start - id=${id}`);
+
       if (longPressTriggered.current) {
         longPressTriggered.current = false;
+        logger.info(`[5002] handlePress skipped due to longPressTriggered - id=${id}`);
         return;
       }
       
@@ -65,15 +76,19 @@ const VideoCardMobile = forwardRef<View, VideoCardMobileProps>(
           pathname: "/play",
           params: { source, id, episodeIndex: episodeIndex - 1, title, position: playTime * 1000 },
         });
+        logger.info(`[5003] navigate to play - id=${id} episodeIndex=${episodeIndex}`);
       } else {
         router.push({
           pathname: "/detail",
           params: { source, q: title },
         });
+        logger.info(`[5004] navigate to detail - id=${id}`);
       }
     };
 
     useEffect(() => {
+      // debug: 印行號短碼（按需）
+      logLineShort("VideoCardMobile#fadeEffect");
       Animated.timing(fadeAnim, {
         toValue: 1,
         duration: DeviceUtils.getAnimationDuration(300),
@@ -83,7 +98,14 @@ const VideoCardMobile = forwardRef<View, VideoCardMobileProps>(
     }, [fadeAnim]);
 
     const handleLongPress = () => {
-      if (progress === undefined) return;
+      // debug: 印行號短碼（按需）
+      logLineShort("VideoCardMobile#handleLongPress");
+      logger.info(`[5100] handleLongPress start - id=${id}`);
+
+      if (progress === undefined) {
+        logger.info(`[5101] handleLongPress ignored (no progress) - id=${id}`);
+        return;
+      }
 
       longPressTriggered.current = true;
 
@@ -96,11 +118,29 @@ const VideoCardMobile = forwardRef<View, VideoCardMobileProps>(
           text: "删除",
           style: "destructive",
           onPress: async () => {
+            // debug: 印行號短碼（按需）
+            logLineShort("VideoCardMobile#deleteRecord");
+            logger.info(`[5102] deleteRecord start - id=${id} source=${source}`);
             try {
               await PlayRecordManager.remove(source, id);
-              onRecordDeleted?.();
+
+              // debug: 印行號短碼（按需）
+              logLineShort("VideoCardMobile#deleteRecordSuccess");
+              logger.info(`[5103] deleteRecord success - id=${id}`);
+
+              if (onRecordDeleted) {
+                // before callback
+                logLineShort("VideoCardMobile#onRecordDeletedBefore");
+                logger.info(`[5104] onRecordDeleted callback exists - invoking - id=${id}`);
+                onRecordDeleted();
+                // after callback
+                logLineShort("VideoCardMobile#onRecordDeletedAfter");
+                logger.info(`[5105] onRecordDeleted callback invoked - id=${id}`);
+              }
             } catch (error) {
-              logger.info("Failed to delete play record:", error);
+              // debug: 印行號短碼（按需）
+              logLineShort("VideoCardMobile#deleteRecordFail");
+              logger.error(`[5200] deleteRecord failed - id=${id} err=${String(error)}`);
               Alert.alert("错误", "删除观看记录失败，请重试");
             }
           },
@@ -123,7 +163,15 @@ const VideoCardMobile = forwardRef<View, VideoCardMobileProps>(
         >
           <View style={styles.card}>
             <Image source={{ uri: api.getImageProxyUrl(poster) }} style={styles.poster} />
-            
+            {/* 新增集數標籤 */}
+            {episodeIndex !== undefined && totalEpisodes !== undefined && totalEpisodes > 1 && (
+              <View style={styles.episodeBadge}>
+                <Text style={styles.badgeText}>
+                  {episodeIndex}/{totalEpisodes}
+                </Text>
+              </View>
+            )}
+
             {/* 进度条 */}
             {isContinueWatching && (
               <View style={styles.progressContainer}>
@@ -166,7 +214,7 @@ const VideoCardMobile = forwardRef<View, VideoCardMobileProps>(
             <ThemedText numberOfLines={2} style={styles.title}>{title}</ThemedText>
             {isContinueWatching && (
               <ThemedText style={styles.continueLabel} numberOfLines={1}>
-                第{episodeIndex! + 1}集 {Math.round((progress || 0) * 100)}%
+                第{episodeIndex!}集 {Math.round((progress || 0) * 100)}%
               </ThemedText>
             )}
           </View>
@@ -281,6 +329,17 @@ const createMobileStyles = (cardWidth: number, cardHeight: number, spacing: numb
     continueLabel: {
       color: Colors.dark.primary,
       fontSize: 11,
+    },
+    episodeBadge: {
+      position: "absolute",
+      top: "35%",
+      left: "50%",
+      transform: [{ translateX: -24 }, { translateY: -10 }],
+      backgroundColor: "rgba(0, 0, 0, 0.7)",
+      borderRadius: 6,
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      zIndex: 10,
     },
   });
 };

@@ -4,7 +4,7 @@ import { api, ServerConfig } from "@/services/api";
 import { storageConfig } from "@/services/storageConfig";
 import Logger from "@/utils/Logger";
 
-const logger = Logger.withTag('SettingsStore');
+const logger = Logger.withTag("SettingsStore");
 
 interface SettingsState {
   apiBaseUrl: string;
@@ -19,6 +19,7 @@ interface SettingsState {
   isModalVisible: boolean;
   serverConfig: ServerConfig | null;
   isLoadingServerConfig: boolean;
+  debugOverlayEnabled: boolean;
   loadSettings: () => Promise<void>;
   fetchServerConfig: () => Promise<void>;
   setApiBaseUrl: (url: string) => void;
@@ -28,6 +29,7 @@ interface SettingsState {
   setVideoSource: (config: { enabledAll: boolean; sources: { [key: string]: boolean } }) => void;
   showModal: () => void;
   hideModal: () => void;
+  setDebugOverlayEnabled: (enabled: boolean) => Promise<void>;
 }
 
 export const useSettingsStore = create<SettingsState>((set, get) => ({
@@ -42,22 +44,27 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     enabledAll: true,
     sources: {},
   },
+  debugOverlayEnabled: false,
+
   loadSettings: async () => {
     const settings = await SettingsManager.get();
     set({
       apiBaseUrl: settings.apiBaseUrl,
       m3uUrl: settings.m3uUrl,
       remoteInputEnabled: settings.remoteInputEnabled || false,
-      videoSource: settings.videoSource || {
-        enabledAll: true,
-        sources: {},
-      },
+      videoSource:
+        settings.videoSource || {
+          enabledAll: true,
+          sources: {},
+        },
+      debugOverlayEnabled: !!settings.debugOverlayEnabled,
     });
     if (settings.apiBaseUrl) {
       api.setBaseUrl(settings.apiBaseUrl);
       await get().fetchServerConfig();
     }
   },
+
   fetchServerConfig: async () => {
     set({ isLoadingServerConfig: true });
     try {
@@ -73,12 +80,14 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       set({ isLoadingServerConfig: false });
     }
   },
+
   setApiBaseUrl: (url) => set({ apiBaseUrl: url }),
   setM3uUrl: (url) => set({ m3uUrl: url }),
   setRemoteInputEnabled: (enabled) => set({ remoteInputEnabled: enabled }),
   setVideoSource: (config) => set({ videoSource: config }),
+
   saveSettings: async () => {
-    const { apiBaseUrl, m3uUrl, remoteInputEnabled, videoSource } = get();
+    const { apiBaseUrl, m3uUrl, remoteInputEnabled, videoSource, debugOverlayEnabled } = get();
 
     let processedApiBaseUrl = apiBaseUrl.trim();
     if (processedApiBaseUrl.endsWith("/")) {
@@ -104,12 +113,27 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       m3uUrl,
       remoteInputEnabled,
       videoSource,
+      debugOverlayEnabled,
     });
+
     api.setBaseUrl(processedApiBaseUrl);
     // Also update the URL in the state so the input field shows the processed URL
-    set({ isModalVisible: false, apiBaseUrl: processedApiBaseUrl });
+    set({ isModalVisible: false, apiBaseUrl: processedApiBaseUrl, debugOverlayEnabled });
     await get().fetchServerConfig();
   },
+
   showModal: () => set({ isModalVisible: true }),
   hideModal: () => set({ isModalVisible: false }),
+
+  setDebugOverlayEnabled: async (enabled: boolean) => {
+    try {
+      // persist immediately so next app start respects user choice
+      const current = await SettingsManager.get();
+      await SettingsManager.save({ ...current, debugOverlayEnabled: !!enabled });
+    } catch (err) {
+      logger.warn("Failed to persist debugOverlayEnabled", err);
+    } finally {
+      set({ debugOverlayEnabled: !!enabled });
+    }
+  },
 }));

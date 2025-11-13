@@ -248,11 +248,24 @@ const usePlayerStore = create<PlayerState>((set, get) => ({
         seekPosition: 0,
       });
       try {
-        await videoRef?.current?.replayAsync();
-      } catch (error) {
+        await videoRef?.current?.unloadAsync();
+        await videoRef?.current?.loadAsync(source, {}, false); // 明確載入
+        await videoRef?.current?.playAsync();
+
+        setTimeout(() => {
+          void (async () => {
+            const status = await videoRef?.current?.getStatusAsync();
+            if (status?.isLoaded && !status.isPlaying) {
+              await videoRef?.current?.playAsync();
+            }
+          })();
+        }, 300);
+      } catch (err) {
+        Logger.warn("影片重播失敗", err);
         logger.debug("Failed to replay video:", error);
         Toast.show({ type: "error", text1: "播放失败" });
       }
+
     }
   },
 

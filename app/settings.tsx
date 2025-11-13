@@ -20,7 +20,9 @@ import { getCommonResponsiveStyles } from "@/utils/ResponsiveStyles";
 import ResponsiveNavigation from "@/components/navigation/ResponsiveNavigation";
 import ResponsiveHeader from "@/components/navigation/ResponsiveHeader";
 import { DeviceUtils } from "@/utils/DeviceUtils";
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
+
+import DebugOverlayToggle from "@/components/DebugOverlayToggle";
 
 type SectionItem = {
   component: React.ReactElement;
@@ -99,65 +101,6 @@ export default function SettingsScreen() {
     setHasChanges(true);
   };
 
-  // const sections = [
-  //   // 远程输入配置 - 仅在非手机端显示
-  //   deviceType !== "mobile" && {
-  //     component: (
-  //       <RemoteInputSection
-  //         onChanged={markAsChanged}
-  //         onFocus={() => {
-  //           setCurrentFocusIndex(0);
-  //           setCurrentSection("remote");
-  //         }}
-  //       />
-  //     ),
-  //     key: "remote",
-  //   },
-  //   {
-  //     component: (
-  //       <APIConfigSection
-  //         ref={apiSectionRef}
-  //         onChanged={markAsChanged}
-  //         hideDescription={deviceType === "mobile"}
-  //         onFocus={() => {
-  //           setCurrentFocusIndex(1);
-  //           setCurrentSection("api");
-  //         }}
-  //       />
-  //     ),
-  //     key: "api",
-  //   },
-  //   // 直播源配置 - 仅在非手机端显示
-  //   deviceType !== "mobile" && {
-  //     component: (
-  //       <LiveStreamSection
-  //         ref={liveStreamSectionRef}
-  //         onChanged={markAsChanged}
-  //         onFocus={() => {
-  //           setCurrentFocusIndex(2);
-  //           setCurrentSection("livestream");
-  //         }}
-  //       />
-  //     ),
-  //     key: "livestream",
-  //   },
-  //   // {
-  //   //   component: (
-  //   //     <VideoSourceSection
-  //   //       onChanged={markAsChanged}
-  //   //       onFocus={() => {
-  //   //         setCurrentFocusIndex(3);
-  //   //         setCurrentSection("videoSource");
-  //   //       }}
-  //   //     />
-  //   //   ),
-  //   //   key: "videoSource",
-  //   // },
-  //   Platform.OS === "android" && {
-  //     component: <UpdateSection />,
-  //     key: "update",
-  //   },
-  // ].filter(Boolean);
   const rawSections = [
     deviceType !== "mobile" && {
       component: (
@@ -202,10 +145,14 @@ export default function SettingsScreen() {
       component: <UpdateSection />,
       key: "update",
     },
+    // Debug toggle always visible in settings; wrap with __DEV__ if you want dev-only
+    {
+      component: <DebugOverlayToggle />,
+      key: "debug_overlay_toggle",
+    },
   ] as const; // 把每个对象都当作字面量保留
   /** 这里得到的 sections 已经是 SectionItem[]（没有 false） */
   const sections: SectionItem[] = rawSections.filter(isSectionItem);
-
 
   // TV遥控器事件处理 - 仅在TV设备上启用
   const handleTVEvent = React.useCallback(
@@ -228,11 +175,10 @@ export default function SettingsScreen() {
 
   useTVEventHandler(deviceType === "tv" ? handleTVEvent : () => { });
 
-  // 动态样式
+  // Dynamic styles using your provided function
   const dynamicStyles = createResponsiveStyles(deviceType, spacing, insets);
 
   const renderSettingsContent = () => (
-    // <KeyboardAvoidingView style={{ flex: 1, backgroundColor }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
     <KeyboardAwareScrollView
       enableOnAndroid={true}
       extraScrollHeight={20}
@@ -241,7 +187,6 @@ export default function SettingsScreen() {
       scrollEnabled={true}
       style={{ flex: 1, backgroundColor }}
     >
-
       <ThemedView style={[commonStyles.container, dynamicStyles.container]}>
         {deviceType === "tv" && (
           <View style={dynamicStyles.header}>
@@ -249,20 +194,6 @@ export default function SettingsScreen() {
           </View>
         )}
 
-        {/* <View style={dynamicStyles.scrollView}>
-          <FlatList
-            data={sections}
-            renderItem={({ item }) => {
-              if (item) {
-                return item.component;
-              }
-              return null;
-            }}
-            keyExtractor={(item) => (item ? item.key : "default")}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={dynamicStyles.listContent}
-          />
-        </View> */}
         <View style={dynamicStyles.scrollView}>
           {sections.map(item => (
             // 必须把 key 放在最外层的 View 上
@@ -283,7 +214,6 @@ export default function SettingsScreen() {
         </View>
       </ThemedView>
     </KeyboardAwareScrollView>
-    // </KeyboardAvoidingView>
   );
 
   // 根据设备类型决定是否包装在响应式导航中
@@ -299,6 +229,7 @@ export default function SettingsScreen() {
   );
 }
 
+/** your provided createResponsiveStyles integrated */
 const createResponsiveStyles = (deviceType: string, spacing: number, insets: any) => {
   const isMobile = deviceType === "mobile";
   const isTablet = deviceType === "tablet";
@@ -342,7 +273,7 @@ const createResponsiveStyles = (deviceType: string, spacing: number, insets: any
       opacity: 0.5,
     },
     itemWrapper: {
-      marginBottom: spacing,   // 这里的 spacing 来自 useResponsiveLayout()
+      marginBottom: spacing,
     },
   });
 };

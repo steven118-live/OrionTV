@@ -9,6 +9,7 @@ import { Colors } from "@/constants/Colors";
 import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
 import { DeviceUtils } from "@/utils/DeviceUtils";
 import Logger from '@/utils/Logger';
+import { logLineShort } from "@/utils/devLog";
 
 const logger = Logger.withTag('VideoCardTablet');
 
@@ -45,9 +46,14 @@ const VideoCardTablet = forwardRef<View, VideoCardTabletProps>(
       onRecordDeleted,
       api,
       playTime = 0,
+      totalEpisodes,
     }: VideoCardTabletProps,
     ref
   ) => {
+    // debug: 印行號短碼（按需）
+    logLineShort("VideoCardTablet#entry");
+    logger.info(`[4000] VideoCardTablet mount - id=${id} source=${source} title=${String(title)}`);
+
     const router = useRouter();
     const { cardWidth, cardHeight, spacing } = useResponsiveLayout();
     const [fadeAnim] = useState(new Animated.Value(0));
@@ -57,8 +63,13 @@ const VideoCardTablet = forwardRef<View, VideoCardTabletProps>(
     const scale = useRef(new Animated.Value(1)).current;
 
     const handlePress = () => {
+      // debug: 印行號短碼（按需）
+      logLineShort("VideoCardTablet#handlePress");
+      logger.info(`[4001] handlePress start - id=${id}`);
+
       if (longPressTriggered.current) {
         longPressTriggered.current = false;
+        logger.info(`[4002] handlePress skipped due to longPressTriggered - id=${id}`);
         return;
       }
       
@@ -67,15 +78,19 @@ const VideoCardTablet = forwardRef<View, VideoCardTabletProps>(
           pathname: "/play",
           params: { source, id, episodeIndex: episodeIndex - 1, title, position: playTime * 1000 },
         });
+        logger.info(`[4003] navigate to play - id=${id} episodeIndex=${episodeIndex}`);
       } else {
         router.push({
           pathname: "/detail",
           params: { source, q: title },
         });
+        logger.info(`[4004] navigate to detail - id=${id}`);
       }
     };
 
     const handlePressIn = useCallback(() => {
+      // debug: 印行號短碼（按需）
+      logLineShort("VideoCardTablet#handlePressIn");
       setIsPressed(true);
       Animated.spring(scale, {
         toValue: 0.96,
@@ -86,6 +101,8 @@ const VideoCardTablet = forwardRef<View, VideoCardTabletProps>(
     }, [scale]);
 
     const handlePressOut = useCallback(() => {
+      // debug: 印行號短碼（按需）
+      logLineShort("VideoCardTablet#handlePressOut");
       setIsPressed(false);
       Animated.spring(scale, {
         toValue: 1.0,
@@ -96,6 +113,8 @@ const VideoCardTablet = forwardRef<View, VideoCardTabletProps>(
     }, [scale]);
 
     useEffect(() => {
+      // debug: 印行號短碼（按需）
+      logLineShort("VideoCardTablet#fadeEffect");
       Animated.timing(fadeAnim, {
         toValue: 1,
         duration: DeviceUtils.getAnimationDuration(400),
@@ -105,7 +124,14 @@ const VideoCardTablet = forwardRef<View, VideoCardTabletProps>(
     }, [fadeAnim]);
 
     const handleLongPress = () => {
-      if (progress === undefined) return;
+      // debug: 印行號短碼（按需）
+      logLineShort("VideoCardTablet#handleLongPress");
+      logger.info(`[4100] handleLongPress start - id=${id}`);
+
+      if (progress === undefined) {
+        logger.info(`[4101] handleLongPress ignored (no progress) - id=${id}`);
+        return;
+      }
 
       longPressTriggered.current = true;
 
@@ -118,11 +144,29 @@ const VideoCardTablet = forwardRef<View, VideoCardTabletProps>(
           text: "删除",
           style: "destructive",
           onPress: async () => {
+            // debug: 印行號短碼（按需）
+            logLineShort("VideoCardTablet#deleteRecord");
+            logger.info(`[4102] deleteRecord start - id=${id} source=${source}`);
             try {
               await PlayRecordManager.remove(source, id);
-              onRecordDeleted?.();
+
+              // debug: 印行號短碼（按需）
+              logLineShort("VideoCardTablet#deleteRecordSuccess");
+              logger.info(`[4103] deleteRecord success - id=${id}`);
+
+              // debug: 印行號短碼（按需） before invoking callback
+              logLineShort("VideoCardTablet#onRecordDeletedBefore");
+              if (onRecordDeleted) {
+                logger.info(`[4104] onRecordDeleted callback exists - invoking - id=${id}`);
+                onRecordDeleted();
+                // debug: 印行號短碼（按需） after invoking callback
+                logLineShort("VideoCardTablet#onRecordDeletedAfter");
+                logger.info(`[4105] onRecordDeleted callback invoked - id=${id}`);
+              }
             } catch (error) {
-              logger.info("Failed to delete play record:", error);
+              // debug: 印行號短碼（按需）
+              logLineShort("VideoCardTablet#deleteRecordFail");
+              logger.error(`[4200] deleteRecord failed - id=${id} err=${String(error)}`);
               Alert.alert("错误", "删除观看记录失败，请重试");
             }
           },
@@ -151,7 +195,15 @@ const VideoCardTablet = forwardRef<View, VideoCardTabletProps>(
         >
           <View style={[styles.card, isPressed && styles.cardPressed]}>
             <Image source={{ uri: api.getImageProxyUrl(poster) }} style={styles.poster} />
-            
+            {/* 新增集數標籤 */}
+            {episodeIndex !== undefined && totalEpisodes !== undefined && totalEpisodes > 1 && (
+              <View style={styles.episodeBadge}>
+                <Text style={styles.badgeText}>
+                  {episodeIndex}/{totalEpisodes}
+                </Text>
+              </View>
+            )}
+
             {/* 悬停效果遮罩 */}
             {isPressed && (
               <View style={styles.pressOverlay}>
@@ -330,6 +382,17 @@ const createTabletStyles = (cardWidth: number, cardHeight: number, spacing: numb
     continueLabel: {
       color: Colors.dark.primary,
       fontSize: 12,
+    },
+    episodeBadge: {
+      position: "absolute",
+      top: "35%",
+      left: "50%",
+      transform: [{ translateX: -24 }, { translateY: -10 }],
+      backgroundColor: "rgba(0, 0, 0, 0.7)",
+      borderRadius: 6,
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      zIndex: 10,
     },
   });
 };

@@ -10,6 +10,7 @@ interface UpdateState {
   // 状态
   updateAvailable: boolean;
   currentVersion: string;
+  upstreamVersion: string; // 新增：保留 oriontv.org 的版本資訊
   remoteVersion: string;
   downloadUrl: string;
   downloading: boolean;
@@ -39,6 +40,7 @@ export const useUpdateStore = create<UpdateState>((set, get) => ({
   // 初始状态
   updateAvailable: false,
   currentVersion: updateService.getCurrentVersion(),
+  upstreamVersion: '',
   remoteVersion: '',
   downloadUrl: '',
   downloading: false,
@@ -66,8 +68,8 @@ export const useUpdateStore = create<UpdateState>((set, get) => ({
 
       // 检查是否已经是最新版本
       const isLatest = !isUpdateAvailable;
-
       set({
+        upstreamVersion: versionInfo.upstreamVersion ?? '',
         remoteVersion: versionInfo.version,
         downloadUrl: versionInfo.downloadUrl,
         updateAvailable: isUpdateAvailable,

@@ -11,6 +11,10 @@ import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
 import { getCommonResponsiveStyles } from "@/utils/ResponsiveStyles";
 import ResponsiveNavigation from "@/components/navigation/ResponsiveNavigation";
 import ResponsiveHeader from "@/components/navigation/ResponsiveHeader";
+import Logger from "@/utils/Logger";
+import { logLineShort } from "@/utils/devLog";
+
+const favLogger = Logger.withTag("Favorites");
 
 export default function FavoritesScreen() {
   const { favorites, loading, error, fetchFavorites } = useFavoritesStore();
@@ -21,8 +25,33 @@ export default function FavoritesScreen() {
   const { deviceType, spacing } = responsiveConfig;
 
   useEffect(() => {
+    // debug: 印行號短碼（按需）
+    logLineShort("Favorites#useEffect");
+    favLogger.info("[1000] fetchFavorites start");
     fetchFavorites();
   }, [fetchFavorites]);
+
+  const handleCardUnfavorite = async (item: Favorite & { key: string }) => {
+    // debug: 印行號短碼（按需）
+    logLineShort("Favorites#onUnfavorite");
+    const opBase = 1100;
+    const itemId = item?.key ?? "<no-key>";
+    favLogger.info(`[${opBase}] onUnfavorite triggered - id=${itemId}`);
+
+    try {
+      const before = (useFavoritesStore.getState().favorites || []).slice(0, 10);
+      favLogger.info(`[${opBase + 1}] before snapshot: ${JSON.stringify(before)}`);
+      await new Promise((res) => setTimeout(res, 200));
+      await fetchFavorites();
+      const after = (useFavoritesStore.getState().favorites || []).slice(0, 10);
+      favLogger.info(`[${opBase + 2}] after snapshot: ${JSON.stringify(after)}`);
+    } catch (err) {
+      // debug: 印行號短碼（按需）
+      logLineShort("Favorites#onUnfavorite#catch");
+      const errCode = 2100;
+      favLogger.error(`[${errCode}] onUnfavorite handling failed - id=${itemId} - err=${String(err)}`);
+    }
+  };
 
   const renderItem = ({ item }: { item: Favorite & { key: string }; index: number }) => {
     const [source, id] = item.key.split("+");
@@ -37,6 +66,7 @@ export default function FavoritesScreen() {
         api={api}
         episodeIndex={1}
         progress={0}
+        onUnfavorite={() => handleCardUnfavorite(item)}
       />
     );
   };

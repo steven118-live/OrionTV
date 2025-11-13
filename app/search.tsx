@@ -20,6 +20,10 @@ import ResponsiveHeader from "@/components/navigation/ResponsiveHeader";
 import { DeviceUtils } from "@/utils/DeviceUtils";
 import Logger from '@/utils/Logger';
 
+// ✅ 引入 opencc-js
+import OpenCC from "opencc-js";
+const converter = OpenCC.Converter({ from: "tw", to: "cn" });
+
 const logger = Logger.withTag('SearchScreen');
 
 export default function SearchScreen() {
@@ -49,25 +53,21 @@ export default function SearchScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lastMessage, targetPage]);
 
-  // useEffect(() => {
-  //   // Focus the text input when the screen loads
-  //   const timer = setTimeout(() => {
-  //     textInputRef.current?.focus();
-  //   }, 200);
-  //   return () => clearTimeout(timer);
-  // }, []);
-
   const handleSearch = async (searchText?: string) => {
     const term = typeof searchText === "string" ? searchText : keyword;
     if (!term.trim()) {
       Keyboard.dismiss();
       return;
     }
+
+    // ✅ 繁轉簡
+    const simplifiedTerm = converter(term);
+
     Keyboard.dismiss();
     setLoading(true);
     setError(null);
     try {
-      const response = await api.searchVideos(term);
+      const response = await api.searchVideos(simplifiedTerm);
       if (response.results.length > 0) {
         setResults(response.results);
       } else {

@@ -8,6 +8,7 @@ import { ThemedText } from "@/components/ThemedText";
 import { Colors } from "@/constants/Colors";
 import Logger from '@/utils/Logger';
 import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
+import { logLineShort } from "@/utils/devLog";
 
 const logger = Logger.withTag('VideoCardTV');
 
@@ -44,9 +45,14 @@ const VideoCard = forwardRef<View, VideoCardProps>(
       onRecordDeleted,
       api,
       playTime = 0,
+      totalEpisodes,
     }: VideoCardProps,
     ref
   ) => {
+    // debug: 印行號短碼（按需）
+    logLineShort("VideoCard#entry");
+    logger.info(`[3000] VideoCard mount - id=${id} source=${source} title=${String(title)}`);
+
     const router = useRouter();
     const [isFocused, setIsFocused] = useState(false);
     const [fadeAnim] = useState(new Animated.Value(0));
@@ -62,8 +68,13 @@ const VideoCard = forwardRef<View, VideoCardProps>(
     };
 
     const handlePress = () => {
+      // debug: 印行號短碼（按需）
+      logLineShort("VideoCard#handlePress");
+      logger.info(`[3001] handlePress start - id=${id}`);
+
       if (longPressTriggered.current) {
         longPressTriggered.current = false;
+        logger.info(`[3002] handlePress skipped due to longPressTriggered - id=${id}`);
         return;
       }
       // 如果有播放进度，直接转到播放页面
@@ -72,15 +83,19 @@ const VideoCard = forwardRef<View, VideoCardProps>(
           pathname: "/play",
           params: { source, id, episodeIndex: episodeIndex - 1, title, position: playTime * 1000 },
         });
+        logger.info(`[3003] navigate to play - id=${id} episodeIndex=${episodeIndex}`);
       } else {
         router.push({
           pathname: "/detail",
           params: { source, q: title },
         });
+        logger.info(`[3004] navigate to detail - id=${id}`);
       }
     };
 
     const handleFocus = useCallback(() => {
+      // debug: 印行號短碼（按需）
+      logLineShort("VideoCard#handleFocus");
       setIsFocused(true);
       Animated.spring(scale, {
         toValue: 1.05,
@@ -92,6 +107,8 @@ const VideoCard = forwardRef<View, VideoCardProps>(
     }, [scale, onFocus]);
 
     const handleBlur = useCallback(() => {
+      // debug: 印行號短碼（按需）
+      logLineShort("VideoCard#handleBlur");
       setIsFocused(false);
       Animated.spring(scale, {
         toValue: 1.0,
@@ -100,6 +117,8 @@ const VideoCard = forwardRef<View, VideoCardProps>(
     }, [scale]);
 
     useEffect(() => {
+      // debug: 印行號短碼（按需） at fade animation mount
+      logLineShort("VideoCard#fadeEffect");
       Animated.timing(fadeAnim, {
         toValue: 1,
         duration: 400,
@@ -109,8 +128,15 @@ const VideoCard = forwardRef<View, VideoCardProps>(
     }, [fadeAnim]);
 
     const handleLongPress = () => {
+      // debug: 印行號短碼（按需）
+      logLineShort("VideoCard#handleLongPress");
+      logger.info(`[3100] handleLongPress start - id=${id}`);
+
       // Only allow long press for items with progress (play records)
-      if (progress === undefined) return;
+      if (progress === undefined) {
+        logger.info(`[3101] handleLongPress ignored (no progress) - id=${id}`);
+        return;
+      }
 
       longPressTriggered.current = true;
 
@@ -124,20 +150,34 @@ const VideoCard = forwardRef<View, VideoCardProps>(
           text: "删除",
           style: "destructive",
           onPress: async () => {
+            // debug: delete start
+            logLineShort("VideoCard#deleteRecord");
+            logger.info(`[3102] deleteRecord start - id=${id} source=${source}`);
             try {
               // Delete from local storage
               await PlayRecordManager.remove(source, id);
 
+              // debug: delete success
+              logLineShort("VideoCard#deleteRecordSuccess");
+              logger.info(`[3103] deleteRecord success - id=${id}`);
+
               // Call the onRecordDeleted callback
               if (onRecordDeleted) {
+                logLineShort("VideoCard#onRecordDeletedBefore");
+                logger.info(`[3104] onRecordDeleted callback exists - invoking - id=${id}`);
                 onRecordDeleted();
+                logLineShort("VideoCard#onRecordDeletedAfter");
+                logger.info(`[3105] onRecordDeleted callback invoked - id=${id}`);
               }
               // 如果没有回调函数，则使用导航刷新作为备选方案
               else if (router.canGoBack()) {
+                logger.info(`[3106] no onRecordDeleted callback; router.replace('/') - id=${id}`);
                 router.replace("/");
               }
             } catch (error) {
-              logger.info("Failed to delete play record:", error);
+              // debug: delete failed
+              logLineShort("VideoCard#deleteRecordFail");
+              logger.error(`[3200] deleteRecord failed - id=${id} err=${String(error)}`);
               Alert.alert("错误", "删除观看记录失败，请重试");
             }
           },
@@ -167,6 +207,16 @@ const VideoCard = forwardRef<View, VideoCardProps>(
         >
           <View style={styles.card}>
             <Image source={{ uri: api.getImageProxyUrl(poster) }} style={styles.poster} />
+
+            {/* 新增集數標籤 */}
+            {episodeIndex !== undefined && totalEpisodes !== undefined && totalEpisodes > 1 && (
+              <View style={styles.episodeBadge}>
+                <Text style={styles.badgeText}>
+                  {episodeIndex}/{totalEpisodes}
+                </Text>
+              </View>
+            )}
+
             {isFocused && (
               <View style={styles.overlay}>
                 {isContinueWatching && (
@@ -206,9 +256,7 @@ const VideoCard = forwardRef<View, VideoCardProps>(
             <ThemedText numberOfLines={1}>{title}</ThemedText>
             {isContinueWatching && (
               <View style={styles.infoRow}>
-                <ThemedText style={styles.continueLabel}>
-                  第{episodeIndex}集 已观看 {Math.round((progress || 0) * 100)}%
-                </ThemedText>
+                <ThemedText style={styles.continueLabel}>第{episodeIndex}集 已观看 {Math.round((progress || 0) * 100)}%</ThemedText>
               </View>
             )}
           </View>
@@ -359,5 +407,16 @@ const styles = StyleSheet.create({
   continueLabel: {
     color: Colors.dark.primary,
     fontSize: 12,
+  },
+  episodeBadge: {
+    position: "absolute",
+    top: "35%",
+    left: "50%",
+    transform: [{ translateX: -24 }, { translateY: -10 }],
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    zIndex: 10,
   },
 });

@@ -8,6 +8,7 @@ import { useUpdateStore } from "@/stores/updateStore";
 export function UpdateSection() {
   const { 
     currentVersion, 
+    upstreamVersion,
     remoteVersion, 
     updateAvailable, 
     downloading, 
@@ -30,10 +31,14 @@ export function UpdateSection() {
 
   return (
     <View style={styles.sectionContainer}>
-      <ThemedText style={styles.sectionTitle}>应用更新</ThemedText>
+      <ThemedText style={styles.sectionTitle}>應用更新</ThemedText>
 
       <View style={styles.row}>
-        <ThemedText style={styles.label}>当前版本</ThemedText>
+        <ThemedText style={styles.label}>原始碼最新版本</ThemedText>
+        <ThemedText style={styles.value}>v{upstreamVersion || 'x.x.xx.'}</ThemedText>
+      </View>
+      <View style={styles.row}>
+        <ThemedText style={styles.label}>目前使用版本</ThemedText>
         <ThemedText style={styles.value}>v{currentVersion}</ThemedText>
       </View>
 
@@ -46,21 +51,21 @@ export function UpdateSection() {
 
       {isLatestVersion && remoteVersion && (
         <View style={styles.row}>
-          <ThemedText style={styles.label}>状态</ThemedText>
+          <ThemedText style={styles.label}>狀態</ThemedText>
           <ThemedText style={[styles.value, styles.latestVersion]}>已是最新版本</ThemedText>
         </View>
       )}
 
       {error && (
         <View style={styles.row}>
-          <ThemedText style={styles.label}>检查结果</ThemedText>
+          <ThemedText style={styles.label}>檢查結果</ThemedText>
           <ThemedText style={[styles.value, styles.errorText]}>{error}</ThemedText>
         </View>
       )}
 
       {downloading && (
         <View style={styles.row}>
-          <ThemedText style={styles.label}>下载进度</ThemedText>
+          <ThemedText style={styles.label}>下載進度</ThemedText>
           <ThemedText style={styles.value}>{downloadProgress}%</ThemedText>
         </View>
       )}
@@ -70,7 +75,7 @@ export function UpdateSection() {
           {checking ? (
             <ActivityIndicator color="#fff" size="small" />
           ) : (
-            <ThemedText style={styles.buttonText}>检查更新</ThemedText>
+            <ThemedText style={styles.buttonText}>檢查更新</ThemedText>
           )}
         </StyledButton>
       </View>

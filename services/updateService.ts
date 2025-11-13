@@ -11,8 +11,9 @@ import { Platform } from 'react-native';
 const logger = Logger.withTag('UpdateService');
 
 interface VersionInfo {
-  version: string;
+  version: string;               // 主要版本（例如 GitHub
   downloadUrl: string;
+  upstreamVersion?: string;      // 新增：oriontv.org 的版本
 }
 
 /**
@@ -38,18 +39,29 @@ class UpdateService {
       try {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 10_000);
-        const response = await fetch(UPDATE_CONFIG.GITHUB_RAW_URL, {
-          signal: controller.signal,
-        });
+        const [responseGitHub, responseUpstream] = await Promise.all([
+          fetch(UPDATE_CONFIG.GITHUB_RAW_URL, { signal: controller.signal }),
+          fetch(UPDATE_CONFIG.ORIONTV_ORG_GITHUB_RAW_URL, { signal: controller.signal }),
+        ]);
         clearTimeout(timeoutId);
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`);
+        if (!responseGitHub.ok) {
+          throw new Error(`GitHub HTTP ${responseGitHub.status}`);
         }
-        const remotePackage = await response.json();
+        const remotePackage = await responseGitHub.json();
         const remoteVersion = remotePackage.version as string;
+        let upstreamVersion = '';
+        if (responseUpstream.ok) {
+          try {
+            const upstreamPackage = await responseUpstream.json();
+            upstreamVersion = upstreamPackage.version ?? '';
+          } catch (e) {
+            logger.warn('解析 upstream 版本失敗', e);
+          }
+      }
         return {
           version: remoteVersion,
           downloadUrl: UPDATE_CONFIG.getDownloadUrl(remoteVersion),
+          upstreamVersion,
         };
       } catch (e) {
         logger.warn(`checkVersion attempt ${attempt}/${maxRetries}`, e);
