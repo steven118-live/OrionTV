@@ -9,7 +9,7 @@ import { Colors } from "@/constants/Colors";
 import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
 import { DeviceUtils } from "@/utils/DeviceUtils";
 import Logger from "../utils/Logger";
-import { logLineShort } from "@/debug/utils/devLog";
+import { logLineShort } from "../src/debug/utils/devLog";
 
 const logger = Logger.withTag('VideoCardMobile');
 
