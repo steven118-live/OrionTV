@@ -45,7 +45,7 @@
     "expo-system-ui": "~3.0.6",
     "expo-web-browser": "~13.0.3",
     "lucide-react-native": "^0.523.0",
-    "opencc-js": "^1.0.5", 
+    "opencc-js": "^1.0.5",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "react-native": "npm:react-native-tvos@~0.74.2-0",
