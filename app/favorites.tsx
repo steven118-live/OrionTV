@@ -12,7 +12,7 @@ import { getCommonResponsiveStyles } from "@/utils/ResponsiveStyles";
 import ResponsiveNavigation from "@/components/navigation/ResponsiveNavigation";
 import ResponsiveHeader from "@/components/navigation/ResponsiveHeader";
 import Logger from "../src/debug/logger";
-import { logLineShort } from "@/debug/utils/devLog";
+import { logLineShort } from "../src/debug/utils/devLog";
 
 
 const favLogger = Logger.withTag("Favorites");
