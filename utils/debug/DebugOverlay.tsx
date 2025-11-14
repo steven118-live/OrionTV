@@ -37,8 +37,12 @@ export default function DebugOverlay(): JSX.Element | null {
   const [logs, setLogs] = useState<OverlayLog[]>(() => getBufferedLogs(200));
   const rafRef = useRef<number | null>(null);
 
+  // 計算是否應顯示 overlay（由這個 flag 決定 visible）
   const shouldShowOverlay = __DEV__ || process.env.DEBUG_OVERLAY === 'true';
-  if (!shouldShowOverlay) return null;
+
+  // debug log 幫助驗證：模組是否載入與 flag 值
+  // 在 production 可移除
+  console.log('[DBG] DebugOverlay loaded, shouldShowOverlay=', shouldShowOverlay);
 
   useEffect(() => {
     (async () => {
@@ -47,7 +51,9 @@ export default function DebugOverlay(): JSX.Element | null {
         const s = await AsyncStorage.getItem(SIZE_KEY);
         if (p && POSITION_OPTIONS.includes(p as PosType)) setPos(p as PosType);
         if (s === 'small' || s === 'medium' || s === 'large') setSize(s as SizeType);
-      } catch (_) {}
+      } catch (e) {
+        console.warn('[DBG] read POS/SIZE fail', e);
+      }
     })();
 
     const unsub = subscribeOverlay((newLogs: OverlayLog[]) => {
@@ -58,13 +64,13 @@ export default function DebugOverlay(): JSX.Element | null {
     });
 
     return () => {
-      unsub();
+      try { unsub(); } catch (_) {}
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
   }, []);
 
-  useEffect(() => { AsyncStorage.setItem(POS_KEY, pos).catch(() => {}); }, [pos]);
-  useEffect(() => { AsyncStorage.setItem(SIZE_KEY, size).catch(() => {}); }, [size]);
+  useEffect(() => { AsyncStorage.setItem(POS_KEY, pos).catch(()=>{}); }, [pos]);
+  useEffect(() => { AsyncStorage.setItem(SIZE_KEY, size).catch(()=>{}); }, [size]);
 
   function handleCopy() {
     try {
@@ -103,6 +109,9 @@ export default function DebugOverlay(): JSX.Element | null {
   const positionStyle: StyleProp<ViewStyle> = getPositionStyle(pos);
   const containerStyle: StyleProp<ViewStyle> = [styles.container, sizeStyle, positionStyle];
 
+  // debug: log before rendering Controls to confirm props
+  console.log('[DBG] rendering DebugOverlay Controls', { pos, size, visible: shouldShowOverlay });
+
   return (
     <View pointerEvents="box-none" style={containerStyle}>
       <View style={styles.header}>
@@ -126,7 +135,7 @@ export default function DebugOverlay(): JSX.Element | null {
       </ScrollView>
 
       <Controls
-        visible={true}
+        visible={shouldShowOverlay}
         defaultPosition={pos as any}
         defaultSize={size as any}
         onChangePosition={(p: PosType) => setPos(p)}

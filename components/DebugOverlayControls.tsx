@@ -28,27 +28,28 @@ export type DebugOverlayControlsProps = {
 };
 
 export default function DebugOverlayControls({
-  debug,
   visible = false,
-  onChangePosition,
-  onChangeSize,
   defaultPosition = DEFAULT_POSITION,
   defaultSize = DEFAULT_SIZE,
+  onChangePosition,
+  onChangeSize,
 }: DebugOverlayControlsProps) {
-  if (!visible) return null;
-
+  // --- 必要初始化與副作用（永遠執行） ---
   const [pos, setPos] = useState<Pos>(defaultPosition);
   const [size, setSize] = useState<Size>(defaultSize);
 
   useEffect(() => {
+    let mounted = true;
     (async () => {
       try {
         const p = await AsyncStorage.getItem(POS_KEY);
         const s = await AsyncStorage.getItem(SIZE_KEY);
+        if (!mounted) return;
         if (p && POSITION_OPTIONS.includes(p as Pos)) setPos(p as Pos);
         if (s === 'small' || s === 'medium' || s === 'large') setSize(s as Size);
       } catch (_) {}
     })();
+    return () => { mounted = false; };
   }, []);
 
   useEffect(() => {
@@ -60,6 +61,11 @@ export default function DebugOverlayControls({
     AsyncStorage.setItem(SIZE_KEY, size).catch(()=>{});
     onChangeSize?.(size);
   }, [size, onChangeSize]);
+
+  // --- UI 以 visible 決定是否渲染 --- 
+  if (!visible) {
+    return null;
+  }
 
   async function handleCopy() {
     try {

@@ -4,7 +4,7 @@ import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect, useRef, useState } from "react";
-import { Platform, View, StyleSheet } from "react-native";
+import { Platform, View, StyleSheet, InteractionManager } from "react-native";
 import Toast from "react-native-toast-message";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
@@ -47,6 +47,9 @@ export default function RootLayout() {
 
   const hasInitialized = useRef(false); // 初始化鎖
   const [flagsLoaded, setFlagsLoaded] = useState(false); // track debug flags load completion
+
+  // 新增：控制何時真正 mount DebugOverlay
+  const [showDebugOverlay, setShowDebugOverlay] = useState(false);
 
   // load persisted debug flags and initialize debug UI (non-blocking)
   useEffect(() => {
@@ -93,6 +96,10 @@ export default function RootLayout() {
     }
   }, [loaded, error]);
 
+  // Decide whether to show DebugOverlay:
+  // - evaluate settings/dev flags first (will be used later to decide mount)
+  const shouldShowOverlay = flagsLoaded && (typeof debugOverlayEnabled === "boolean" ? debugOverlayEnabled : __DEV__);
+
   // API 驗證成功後才刷新最近播放 & 初始化選集 & 檢查更新
   useEffect(() => {
     if (!apiStatus.isValid || (!loaded && !error) || hasInitialized.current) return;
@@ -114,6 +121,14 @@ export default function RootLayout() {
           (useHomeStore as any).getState?.().setPlayRecords?.([]) ?? null;
         } finally {
           initEpisodeSelection(); // 確保初始化選集，不受錯誤影響
+
+          // 在初始化與播放記錄流程完成後，再決定是否 mount DebugOverlay
+          if (shouldShowOverlay) {
+            // 用 InteractionManager 確保互動完成後再 mount，以避免與初始化競爭
+            InteractionManager.runAfterInteractions(() => {
+              setShowDebugOverlay(true);
+            });
+          }
         }
       }, 2000);
 
@@ -121,7 +136,7 @@ export default function RootLayout() {
     }, 1000);
 
     return () => clearTimeout(updateTimer);
-  }, [apiStatus.isValid, refreshPlayRecords, initEpisodeSelection, loaded, error, lastCheckTime, checkForUpdate]);
+  }, [apiStatus.isValid, refreshPlayRecords, initEpisodeSelection, loaded, error, lastCheckTime, checkForUpdate, shouldShowOverlay]);
 
   // 遠端控制伺服器啟停
   useEffect(() => {
@@ -131,11 +146,6 @@ export default function RootLayout() {
       stopServer();
     }
   }, [remoteInputEnabled, startServer, stopServer, responsiveConfig.deviceType]);
-
-  // Decide whether to show DebugOverlay:
-  // - show if __DEV__ is true, OR
-  // - show if settingsStore.debugOverlayEnabled is true
-  const shouldShowOverlay = flagsLoaded && (typeof debugOverlayEnabled === "boolean" ? debugOverlayEnabled : __DEV__);
 
   return (
     <SafeAreaProvider>
@@ -157,9 +167,9 @@ export default function RootLayout() {
         <LoginModal />
         <UpdateModal />
 
-        {/* Debug UI: DebugToast always mounted; DebugOverlay controlled by flagsLoaded + settingsStore or dev mode */}
+        {/* Debug UI: DebugToast always mounted; DebugOverlay mount delayed by initialization */}
         <DebugToast />
-        {shouldShowOverlay && <DebugOverlay />}
+        {showDebugOverlay && <DebugOverlay />}
       </ThemeProvider>
     </SafeAreaProvider>
   );
