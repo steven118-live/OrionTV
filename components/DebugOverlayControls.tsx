@@ -1,28 +1,26 @@
-// components/DebugOverlayControls.tsx
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, Platform, Linking } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { exportBufferedLogs } from '../utils/Logger';
 const Clipboard = require('@react-native-clipboard/clipboard') as any;
 
-import { Linking } from 'react-native';
-
 const POS_KEY = 'dbg:overlay:position';
 const SIZE_KEY = 'dbg:overlay:size';
 
-const POSITION_OPTIONS = [
+export const POSITION_OPTIONS = [
   'top-left','top-center','top-right',
   'center-left','center','center-right',
   'bottom-left','bottom-center','bottom-right'
 ] as const;
-type Pos = typeof POSITION_OPTIONS[number];
-type Size = 'small' | 'medium' | 'large';
+export type Pos = typeof POSITION_OPTIONS[number];
+export type Size = 'small' | 'medium' | 'large';
 
-const DEFAULT_SIZE: Size = 'large'; // keep largest as default per your request
+const DEFAULT_SIZE: Size = 'large';
+const DEFAULT_POSITION: Pos = 'center';
 
 export type DebugOverlayControlsProps = {
   debug?: boolean;
-  visible?: boolean;             // default changed to false
+  visible?: boolean;
   onChangePosition?: (p: Pos) => void;
   onChangeSize?: (s: Size) => void;
   defaultPosition?: Pos;
@@ -31,13 +29,12 @@ export type DebugOverlayControlsProps = {
 
 export default function DebugOverlayControls({
   debug,
-  visible = false,               // <-- default false
+  visible = false,
   onChangePosition,
   onChangeSize,
-  defaultPosition = 'bottom-right',
-  defaultSize = DEFAULT_SIZE
+  defaultPosition = DEFAULT_POSITION,
+  defaultSize = DEFAULT_SIZE,
 }: DebugOverlayControlsProps) {
-  // don't render unless explicitly enabled
   if (!visible) return null;
 
   const [pos, setPos] = useState<Pos>(defaultPosition);
@@ -50,37 +47,31 @@ export default function DebugOverlayControls({
         const s = await AsyncStorage.getItem(SIZE_KEY);
         if (p && POSITION_OPTIONS.includes(p as Pos)) setPos(p as Pos);
         if (s === 'small' || s === 'medium' || s === 'large') setSize(s as Size);
-      } catch (e) {
-        // swallow storage errors to avoid crash
-      }
+      } catch (_) {}
     })();
   }, []);
 
   useEffect(() => {
     AsyncStorage.setItem(POS_KEY, pos).catch(()=>{});
-    if (onChangePosition) onChangePosition(pos);
+    onChangePosition?.(pos);
   }, [pos, onChangePosition]);
 
   useEffect(() => {
     AsyncStorage.setItem(SIZE_KEY, size).catch(()=>{});
-    if (onChangeSize) onChangeSize(size);
+    onChangeSize?.(size);
   }, [size, onChangeSize]);
 
   async function handleCopy() {
     try {
       const text = exportBufferedLogs('text', 1000);
       try {
-        // prefer @react-native-clipboard/clipboard
         if (Clipboard && (Clipboard as any).setString) {
           (Clipboard as any).setString(text);
         } else {
-          // fallback to react-native Clipboard (older RN)
-          // eslint-disable-next-line @typescript-eslint/no-var-requires
           const RNClipboard = require('react-native').Clipboard;
-          if (RNClipboard && RNClipboard.setString) RNClipboard.setString(text);
+          RNClipboard?.setString?.(text);
         }
       } catch (_) {
-        // final fallback: alert first chunk
         Alert.alert('Copied (partial)', text.slice(0, 1024));
       }
       Alert.alert('Copied', 'Debug logs copied to clipboard.');
@@ -93,11 +84,11 @@ export default function DebugOverlayControls({
     try {
       const body = encodeURIComponent(exportBufferedLogs('text', 1000));
       const subject = encodeURIComponent(`OrionTV Debug Logs ${new Date().toISOString()}`);
-      const to = 'recipient@example.com'; // update by editing code or extend UI to accept recipient
+      const to = 'recipient@example.com';
       const mailto = `mailto:${to}?subject=${subject}&body=${body}`;
 
       if (Platform.OS === 'web') {
-        // @ts-ignore window exists on web
+        // @ts-ignore
         window.location.href = mailto;
         return;
       }
@@ -106,14 +97,11 @@ export default function DebugOverlayControls({
       if (supported) {
         await Linking.openURL(mailto);
       } else {
-        // fallback: copy logs to clipboard and notify user
         try {
           if (Clipboard && (Clipboard as any).setString) {
             (Clipboard as any).setString(decodeURIComponent(body));
           }
-        } catch (_) {
-          // ignore
-        }
+        } catch (_) {}
         Alert.alert('Email client not available', 'Logs copied to clipboard; paste into your email client.');
       }
     } catch (e) {

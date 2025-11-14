@@ -33,7 +33,7 @@ const SIZE_MAP: Record<Size, { width: string; height: string }> = {
 };
 
 export default function DebugOverlay(): JSX.Element | null {
-  const [pos, setPos] = useState<Pos>('bottom-right');
+  const [pos, setPos] = useState<Pos>('center');
   const [size, setSize] = useState<Size>('large');
   const [logs, setLogs] = useState<OverlayLog[]>(() => getBufferedLogs(200));
   const rafRef = useRef<number | null>(null);
