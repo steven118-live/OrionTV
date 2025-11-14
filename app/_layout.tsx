@@ -115,13 +115,6 @@ export default function RootLayout() {
 
       const playbackTimer = setTimeout(async () => {
         try {
-          await refreshPlayRecords();
-        } catch (err) {
-          logger.warn("播放紀錄刷新失敗", err);
-          (useHomeStore as any).getState?.().setPlayRecords?.([]) ?? null;
-        } finally {
-          initEpisodeSelection(); // 確保初始化選集，不受錯誤影響
-
           // 在初始化與播放記錄流程完成後，再決定是否 mount DebugOverlay
           if (shouldShowOverlay) {
             // 用 InteractionManager 確保互動完成後再 mount，以避免與初始化競爭
@@ -129,6 +122,13 @@ export default function RootLayout() {
               setShowDebugOverlay(true);
             });
           }
+          await refreshPlayRecords();
+        } catch (err) {
+          logger.warn("播放紀錄刷新失敗", err);
+          (useHomeStore as any).getState?.().setPlayRecords?.([]) ?? null;
+        } finally {
+          initEpisodeSelection(); // 確保初始化選集，不受錯誤影響
+
         }
       }, 2000);
 
