@@ -1,16 +1,24 @@
-// src/App.tsx — 放在最上方，且在任何會使用 debug 的模組 import 前
+/* 放在檔案最上方，任何 import 之前*/
 if (__DEV__) {
   (global as any).DEBUG_FLAGS = (global as any).DEBUG_FLAGS ?? {};
   (global as any).DEBUG_FLAGS.line_trace = true;
 
-  // 可選：把 util 掛到 global 以便在 console 直接呼叫（非必要）
   try {
+    // 調整為你的 devLog 實際相對路徑（範例：OrionTV/utils/debug/utils/devLog.ts）
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    (global as any).__devLog = require("@/utils/devLog").logLineShort;
-  } catch {
-    //
-  }
+    (global as any).__devLog = require('../utils/debug/utils/devLog').logLineShort;
+  } catch {}
 }
+
+if (__DEV__ || process.env.DEBUG_OVERLAY === 'true') {
+  try {
+    // 你提供的新路徑：OrionTV/utils/debug/DebugOverlay.tsx
+    // 從 src/App.tsx 相對路徑為 ../utils/debug/DebugOverlay
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    require('../utils/debug/DebugOverlay');
+  } catch {}
+}
+
 import '../utils/logger_augment';
 import React, { useEffect, useCallback, useRef, useState } from "react";
 import { AppState, View, StyleSheet, ActivityIndicator, FlatList, Pressable, Animated, StatusBar, Platform, BackHandler, ToastAndroid } from "react-native";

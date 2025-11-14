@@ -1,238 +1,196 @@
-// Minimal patch: make timers and globals TypeScript-safe (no new files).
-// - use numeric timer refs (React Native setTimeout returns number).
-// - use (global as any) guards for __pushAppDebug.
-// - guard Platform.isTV access and Pressable ref usage.
-// - avoid NodeJS.Timeout type so tsc doesn't complain in RN environment.
-
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useEffect, useState, useRef } from 'react';
 import {
-  BackHandler,
-  Dimensions,
-  Pressable,
-  StyleSheet,
-  Text,
   View,
-  ViewStyle,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
   Platform,
-} from "react-native";
-import PositionableFAB from "./PositionableFAB";
+  Dimensions,
+  ScrollView,
+  Alert,
+} from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import DebugOverlayControls from '../../components/DebugOverlayControls';
+import { subscribeOverlay, getBufferedLogs, exportBufferedLogs } from '../Logger';
+import type { OverlayLog } from '../Logger';
 
-/**
- * DebugOverlay with:
- * - batched log updates (reduce UI churn)
- * - globalThis.__pushAppDebug safe wrapper
- * - focuses Close button when panel opens (TV)
- * - uses pointerEvents="box-none" on parent
- */
+// Storage keys
+const POS_KEY = 'dbg:overlay:position';
+const SIZE_KEY = 'dbg:overlay:size';
 
-export default function DebugOverlay() {
-  const [open, setOpen] = useState(false);
-  const [logs, setLogs] = useState<string[]>([]);
-  const mountedRef = useRef(true);
-  const pendingRef = useRef<string[]>([]);
-  const batchTimerRef = useRef<number | null>(null);
-  const closeRef = useRef<any>(null);
+const POSITION_OPTIONS = [
+  'top-left','top-center','top-right',
+  'center-left','center','center-right',
+  'bottom-left','bottom-center','bottom-right'
+] as const;
+type Pos = typeof POSITION_OPTIONS[number];
+type Size = 'small'|'medium'|'large';
+
+const SIZE_MAP: Record<Size, { width: string; height: string }> = {
+  small: { width: '30%', height: '22%' },
+  medium: { width: '50%', height: '36%' },
+  large: { width: '80%', height: '60%' },
+};
+
+export default function DebugOverlay(): JSX.Element | null {
+  const [pos, setPos] = useState<Pos>('bottom-right');
+  const [size, setSize] = useState<Size>('large');
+  const [logs, setLogs] = useState<OverlayLog[]>(() => getBufferedLogs(200));
+  const rafRef = useRef<number | null>(null);
 
   useEffect(() => {
-    mountedRef.current = true;
-    // safe global push that batches UI updates
-    (global as any).__pushAppDebug = (msg: string) => {
+    (async () => {
       try {
-        if (!mountedRef.current) return;
-        pendingRef.current.push(`${new Date().toLocaleTimeString()} ${msg}`);
-        if (!batchTimerRef.current) {
-          batchTimerRef.current = (setTimeout(() => {
-            try {
-              setLogs((prev) => {
-                const batch = pendingRef.current.splice(0);
-                batchTimerRef.current = null;
-                const next = prev.concat(batch).slice(-200);
-                return next;
-              });
-            } catch (_) {
-              batchTimerRef.current = null;
-            }
-          }, 180) as unknown) as number;
-        }
-      } catch (_) {}
-    };
+        const p = await AsyncStorage.getItem(POS_KEY);
+        const s = await AsyncStorage.getItem(SIZE_KEY);
+        if (p && POSITION_OPTIONS.includes(p as Pos)) setPos(p as Pos);
+        if (s === 'small' || s === 'medium' || s === 'large') setSize(s as Size);
+      } catch (_) { /* swallow storage errors */ }
+    })();
+
+    const unsub = subscribeOverlay((logs: OverlayLog[]) => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      rafRef.current = requestAnimationFrame(() => {
+        setLogs(logs.slice(-200));
+      }) as any;
+    });
+
     return () => {
-      mountedRef.current = false;
-      try {
-        delete (global as any).__pushAppDebug;
-      } catch (_) {}
-      if (batchTimerRef.current !== null) {
-        clearTimeout(batchTimerRef.current as number);
-        batchTimerRef.current = null;
-      }
+      unsub();
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
   }, []);
 
-  // Close overlay on hardware back when open
-  useEffect(() => {
-    const handler = () => {
-      if (open) {
-        setOpen(false);
-        return true;
-      }
-      return false;
-    };
-    const sub = BackHandler.addEventListener("hardwareBackPress", handler);
-    return () => {
-      try {
-        sub.remove();
-      } catch (_) {}
-    };
-  }, [open]);
+  useEffect(() => { AsyncStorage.setItem(POS_KEY, pos).catch(()=>{}); }, [pos]);
+  useEffect(() => { AsyncStorage.setItem(SIZE_KEY, size).catch(()=>{}); }, [size]);
 
-  // When panel opens, on TV request focus for closeRef by rendering hasTVPreferredFocus on it
-  useEffect(() => {
-    // small microtask to allow component to mount before focus hint
-    const isTV = (Platform as any).isTV;
-    if (open && isTV && closeRef.current && typeof closeRef.current.setNativeProps === "function") {
-      try {
-        // hasTVPreferredFocus prop on Pressable will do the main job; this is a light fallback
-        closeRef.current.setNativeProps?.({ hasTVPreferredFocus: true });
-      } catch (_) {}
+  function getPositionStyle(p: Pos, sizeKey: Size) {
+    const style: any = { position: 'absolute' };
+    if (p.includes('top')) style.top = 12;
+    if (p.includes('bottom')) style.bottom = 12;
+    if (p.includes('left')) style.left = 12;
+    if (p.includes('right')) style.right = 12;
+
+    if (p === 'top-center') {
+      style.left = '50%';
+      style.transform = [{ translateX: '-50%' }];
     }
-  }, [open]);
+    if (p === 'bottom-center') {
+      style.left = '50%';
+      style.transform = [{ translateX: '-50%' }];
+    }
+    if (p === 'center') {
+      style.left = '50%';
+      style.top = '50%';
+      style.transform = [{ translateX: '-50%' }, { translateY: '-50%' }];
+    }
+    if (p === 'center-left') {
+      style.top = '50%';
+      style.transform = [{ translateY: '-50%' }];
+    }
+    if (p === 'center-right') {
+      style.top = '50%';
+      style.transform = [{ translateY: '-50%' }];
+    }
 
-  const clearLogs = useCallback(() => setLogs([]), []);
-  const copyLogs = useCallback(async () => {
+    return style;
+  }
+
+  async function handleCopy() {
     try {
-      const joined = logs.join("\n");
-      // runtime require so TS doesn't demand types
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const ClipboardModule: any = require("@react-native-clipboard/clipboard");
-      if (ClipboardModule && typeof ClipboardModule.setString === "function") {
-        ClipboardModule.setString(joined);
-      } else if (ClipboardModule && typeof ClipboardModule.default?.setString === "function") {
-        ClipboardModule.default.setString(joined);
+      const text = exportBufferedLogs('text', 1000);
+      try {
+        const Clipboard = require('@react-native-clipboard/clipboard');
+        if (Clipboard && Clipboard.setString) {
+          Clipboard.setString(text);
+        } else {
+          const RNClipboard = require('react-native').Clipboard;
+          if (RNClipboard && RNClipboard.setString) RNClipboard.setString(text);
+        }
+      } catch (_) {
+        Alert.alert('Copy not available', text.slice(0, 1024));
       }
-      (global as any).__pushAppDebug?.("[DBG_COPY] logs copied");
-    } catch (_) {}
-  }, [logs]);
+      Alert.alert('Copied', 'Debug logs copied to clipboard.');
+    } catch (e: any) {
+      Alert.alert('Copy failed', String(e));
+    }
+  }
 
-  const panelStyle: ViewStyle = {
-    position: "absolute",
-    right: 12,
-    top: 40,
-    width: Math.min(420, Dimensions.get("window").width - 24),
-    height: Math.min(420, Dimensions.get("window").height - 80),
-    backgroundColor: "rgba(6,6,6,0.95)",
-    borderRadius: 8,
-    padding: 12,
-    zIndex: 99998,
-  };
+  async function handleSendEmail(to = 'recipient@example.com') {
+    try {
+      const body = encodeURIComponent(exportBufferedLogs('text', 1000));
+      const subject = encodeURIComponent(`OrionTV Debug Logs ${new Date().toISOString()}`);
+      const mailto = `mailto:${encodeURIComponent(to)}?subject=${subject}&body=${body}`;
+
+      const { Linking } = require('react-native');
+      const can = await Linking.canOpenURL(mailto);
+      if (can) {
+        await Linking.openURL(mailto);
+      } else {
+        try {
+          const Clipboard = require('@react-native-clipboard/clipboard');
+          if (Clipboard && Clipboard.setString) Clipboard.setString(decodeURIComponent(body));
+        } catch (_) {}
+        Alert.alert('Email client unavailable', 'Logs copied to clipboard; paste into your email client.');
+      }
+    } catch (e: any) {
+      Alert.alert('Send failed', String(e));
+    }
+  }
+
+  const sizeStyle = { width: SIZE_MAP[size].width, height: SIZE_MAP[size].height };
+  const positionStyle = getPositionStyle(pos, size);
+  const containerStyle = [styles.container, sizeStyle, positionStyle] as any;
+
+  if (!__DEV__ && process.env.DEBUG_OVERLAY !== 'true') return null;
 
   return (
-    <View pointerEvents="box-none" style={styles.overlayContainer}>
-      <PositionableFAB onPress={() => setOpen(true)} initial="center" />
-
-      {open && (
-        <View style={panelStyle} pointerEvents="box-none">
-          <View style={styles.panelHeader}>
-            <Text style={styles.panelTitle}>Debug Overlay</Text>
-            <View style={styles.headerButtons}>
-              <Pressable
-                ref={closeRef}
-                hasTVPreferredFocus={open}
-                onPress={() => setOpen(false)}
-                style={styles.iconButton}
-                focusable={true}
-                accessibilityRole="button"
-                accessibilityLabel="Close debug overlay"
-              >
-                <Text style={styles.iconText}>Close</Text>
-              </Pressable>
-
-              <Pressable onPress={clearLogs} style={styles.iconButton} focusable={true} accessibilityRole="button" accessibilityLabel="Clear logs">
-                <Text style={styles.iconText}>Clear</Text>
-              </Pressable>
-
-              <Pressable onPress={copyLogs} style={styles.iconButton} focusable={true} accessibilityRole="button" accessibilityLabel="Copy logs">
-                <Text style={styles.iconText}>Copy</Text>
-              </Pressable>
-            </View>
-          </View>
-
-          <View style={styles.logContainer}>
-            {logs.length === 0 ? (
-              <View style={styles.empty}>
-                <Text style={styles.emptyText}>No logs</Text>
-              </View>
-            ) : (
-              <View style={{ flex: 1 }}>
-                {logs
-                  .slice()
-                  .reverse()
-                  .map((l, i) => (
-                    <View key={i} style={styles.logRow}>
-                      <Text style={styles.logText}>{l}</Text>
-                    </View>
-                  ))}
-              </View>
-            )}
-          </View>
+    <View pointerEvents="box-none" style={containerStyle}>
+      <View style={styles.header}>
+        <Text style={styles.title}>DBG</Text>
+        <View style={styles.headerRight}>
+          <TouchableOpacity onPress={handleCopy} style={styles.headerBtn}>
+            <Text style={styles.btnText}>Copy</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => handleSendEmail()} style={styles.headerBtn}>
+            <Text style={styles.btnText}>Send</Text>
+          </TouchableOpacity>
         </View>
-      )}
+      </View>
+
+      <ScrollView style={styles.body}>
+        {logs.slice().reverse().map((l: OverlayLog, i: number) => (
+          <Text key={i} style={styles.logLine}>
+            {`${new Date(l.ts).toISOString()} ${l.level} ${
+              typeof l.message === 'string' ? l.message : JSON.stringify(l.message)
+            }`}
+          </Text>
+        ))}
+      </ScrollView>
+
+      <DebugOverlayControls
+        defaultPosition={pos}
+        defaultSize={size}
+        onChangePosition={(p) => setPos(p)}
+        onChangeSize={(s) => setSize(s)}
+      />
     </View>
   );
 }
 
-/* styles */
-
 const styles = StyleSheet.create({
-  overlayContainer: {
-    position: "absolute",
-    left: 0,
-    top: 0,
-    right: 0,
-    bottom: 0,
+  container: {
+    backgroundColor: 'rgba(18,18,18,0.92)',
+    borderRadius: 8,
+    padding: 6,
+    zIndex: 99999,
+    overflow: 'hidden',
   },
-  panelHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  panelTitle: {
-    color: "#fff",
-    fontWeight: "700",
-    fontSize: 16,
-  },
-  headerButtons: {
-    flexDirection: "row",
-  },
-  iconButton: {
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    marginLeft: 8,
-    borderRadius: 6,
-    backgroundColor: "rgba(255,255,255,0.04)",
-  },
-  iconText: {
-    color: "#fff",
-    fontSize: 12,
-  },
-  logContainer: {
-    marginTop: 12,
-    flex: 1,
-  },
-  empty: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  emptyText: {
-    color: "rgba(255,255,255,0.6)",
-  },
-  logRow: {
-    paddingVertical: 6,
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(255,255,255,0.03)",
-  },
-  logText: {
-    color: "rgba(255,255,255,0.9)",
-    fontSize: 12,
-  },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  title: { color: '#fff', fontWeight: '700' },
+  headerRight: { flexDirection: 'row' },
+  headerBtn: { marginLeft: 8, backgroundColor: '#222', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4 },
+  btnText: { color: '#fff', fontSize: 12 },
+  body: { marginTop: 6, maxHeight: '60%' },
+  logLine: { color: '#ddd', fontSize: 11, marginBottom: 2 },
 });

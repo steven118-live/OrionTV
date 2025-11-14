@@ -10,6 +10,63 @@ export enum LogLevel {
   ERROR = 3,
 }
 
+export type OverlayLog = {
+  ts: number;
+  level: string;
+  message: string | object;
+  meta?: any;
+};
+
+// --- Debug overlay integration (safe buffer pubsub) ---
+const OVERLAY_BUFFER_MAX = 1000;
+let overlayBuffer: OverlayLog[] = [];
+const overlaySubs = new Set<(logs: OverlayLog[]) => void>();
+
+export function safePushToOverlay(level: string, message: string, meta?: any) {
+  try {
+    const entry: OverlayLog = { ts: Date.now(), level, message, meta };
+    overlayBuffer.push(entry);
+    if (overlayBuffer.length > OVERLAY_BUFFER_MAX) {
+      overlayBuffer = overlayBuffer.slice(-OVERLAY_BUFFER_MAX);
+    }
+    const snapshot = overlayBuffer.slice();
+    overlaySubs.forEach(cb => {
+      try {
+        cb(snapshot);
+      } catch (_) {
+        /* ignore subscriber errors */
+      }
+    });
+  } catch (_) {
+    /* swallow to avoid crash in production logging */
+  }
+}
+
+export function getBufferedLogs(limit = 500): OverlayLog[] {
+  return overlayBuffer.slice(-limit);
+}
+
+export function exportBufferedLogs(format: 'text' | 'json' = 'text', limit = 200): string {
+  const data = getBufferedLogs(limit);
+  if (format === 'json') return JSON.stringify(data, null, 2);
+  return data
+    .map(d =>
+      `${new Date(d.ts).toISOString()} | ${d.level} | ${
+        typeof d.message === 'string' ? d.message : JSON.stringify(d.message)
+      }`
+    )
+    .join('\n');
+}
+
+export function subscribeOverlay(cb: (logs: OverlayLog[]) => void) {
+  overlaySubs.add(cb);
+  try {
+    cb(overlayBuffer.slice());
+  } catch (_) {}
+  return () => overlaySubs.delete(cb);
+}
+// --- end overlay integration ---
+
 interface LoggerOptions {
   tag?: string;
   level?: LogLevel;
@@ -58,9 +115,7 @@ class LoggerClass {
   debug(message: any, ...args: any[]): void;
   debug(options: LoggerOptions, message: any, ...args: any[]): void;
   debug(optionsOrMessage: LoggerOptions | any, message?: any, ...args: any[]): void {
-    if (!__DEV__) return;
-
-    if (this.minLevel > LogLevel.DEBUG) return;
+    if (!__DEV__ || this.minLevel > LogLevel.DEBUG) return;
 
     if (typeof optionsOrMessage === 'object' && optionsOrMessage.tag !== undefined) {
       const options = optionsOrMessage as LoggerOptions;
@@ -76,9 +131,7 @@ class LoggerClass {
   info(message: any, ...args: any[]): void;
   info(options: LoggerOptions, message: any, ...args: any[]): void;
   info(optionsOrMessage: LoggerOptions | any, message?: any, ...args: any[]): void {
-    if (!__DEV__) return;
-
-    if (this.minLevel > LogLevel.INFO) return;
+    if (!__DEV__ || this.minLevel > LogLevel.INFO) return;
 
     if (typeof optionsOrMessage === 'object' && optionsOrMessage.tag !== undefined) {
       const options = optionsOrMessage as LoggerOptions;
@@ -94,9 +147,7 @@ class LoggerClass {
   warn(message: any, ...args: any[]): void;
   warn(options: LoggerOptions, message: any, ...args: any[]): void;
   warn(optionsOrMessage: LoggerOptions | any, message?: any, ...args: any[]): void {
-    if (!__DEV__) return;
-
-    if (this.minLevel > LogLevel.WARN) return;
+    if (!__DEV__ || this.minLevel > LogLevel.WARN) return;
 
     if (typeof optionsOrMessage === 'object' && optionsOrMessage.tag !== undefined) {
       const options = optionsOrMessage as LoggerOptions;
@@ -112,9 +163,7 @@ class LoggerClass {
   error(message: any, ...args: any[]): void;
   error(options: LoggerOptions, message: any, ...args: any[]): void;
   error(optionsOrMessage: LoggerOptions | any, message?: any, ...args: any[]): void {
-    if (!__DEV__) return;
-
-    if (this.minLevel > LogLevel.ERROR) return;
+    if (!__DEV__ || this.minLevel > LogLevel.ERROR) return;
 
     if (typeof optionsOrMessage === 'object' && optionsOrMessage.tag !== undefined) {
       const options = optionsOrMessage as LoggerOptions;
@@ -124,13 +173,10 @@ class LoggerClass {
     }
   }
 
-  /**
-   * 创建带标签的日志实例
-   */
   withTag(tag: string): LoggerClass {
     const taggedLogger = new LoggerClass();
     taggedLogger.minLevel = this.minLevel;
-    
+
     const originalDebug = taggedLogger.debug.bind(taggedLogger);
     const originalInfo = taggedLogger.info.bind(taggedLogger);
     const originalWarn = taggedLogger.warn.bind(taggedLogger);
