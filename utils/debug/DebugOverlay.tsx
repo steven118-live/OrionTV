@@ -4,17 +4,16 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  Platform,
-  Dimensions,
   ScrollView,
   Alert,
+  ViewStyle,
+  StyleProp,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import DebugOverlayControls from '../../components/DebugOverlayControls';
+import DebugOverlayControls, { DebugOverlayControlsProps } from '../../components/DebugOverlayControls';
 import { subscribeOverlay, getBufferedLogs, exportBufferedLogs } from '../Logger';
 import type { OverlayLog } from '../Logger';
 
-// Storage keys
 const POS_KEY = 'dbg:overlay:position';
 const SIZE_KEY = 'dbg:overlay:size';
 
@@ -23,35 +22,38 @@ const POSITION_OPTIONS = [
   'center-left','center','center-right',
   'bottom-left','bottom-center','bottom-right'
 ] as const;
-type Pos = typeof POSITION_OPTIONS[number];
-type Size = 'small'|'medium'|'large';
+type PosType = typeof POSITION_OPTIONS[number];
+type SizeType = 'small' | 'medium' | 'large';
 
-const SIZE_MAP: Record<Size, { width: string; height: string }> = {
+const SIZE_MAP: Record<SizeType, { width: string; height: string }> = {
   small: { width: '30%', height: '22%' },
   medium: { width: '50%', height: '36%' },
   large: { width: '80%', height: '60%' },
 };
 
 export default function DebugOverlay(): JSX.Element | null {
-  const [pos, setPos] = useState<Pos>('center');
-  const [size, setSize] = useState<Size>('large');
+  const [pos, setPos] = useState<PosType>('center');
+  const [size, setSize] = useState<SizeType>('large');
   const [logs, setLogs] = useState<OverlayLog[]>(() => getBufferedLogs(200));
   const rafRef = useRef<number | null>(null);
+
+  const shouldShowOverlay = __DEV__ || process.env.DEBUG_OVERLAY === 'true';
+  if (!shouldShowOverlay) return null;
 
   useEffect(() => {
     (async () => {
       try {
         const p = await AsyncStorage.getItem(POS_KEY);
         const s = await AsyncStorage.getItem(SIZE_KEY);
-        if (p && POSITION_OPTIONS.includes(p as Pos)) setPos(p as Pos);
-        if (s === 'small' || s === 'medium' || s === 'large') setSize(s as Size);
-      } catch (_) { /* swallow storage errors */ }
+        if (p && POSITION_OPTIONS.includes(p as PosType)) setPos(p as PosType);
+        if (s === 'small' || s === 'medium' || s === 'large') setSize(s as SizeType);
+      } catch (_) {}
     })();
 
-    const unsub = subscribeOverlay((logs: OverlayLog[]) => {
+    const unsub = subscribeOverlay((newLogs: OverlayLog[]) => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
       rafRef.current = requestAnimationFrame(() => {
-        setLogs(logs.slice(-200));
+        setLogs(newLogs.slice(-200));
       }) as any;
     });
 
@@ -61,55 +63,14 @@ export default function DebugOverlay(): JSX.Element | null {
     };
   }, []);
 
-  useEffect(() => { AsyncStorage.setItem(POS_KEY, pos).catch(()=>{}); }, [pos]);
-  useEffect(() => { AsyncStorage.setItem(SIZE_KEY, size).catch(()=>{}); }, [size]);
+  useEffect(() => { AsyncStorage.setItem(POS_KEY, pos).catch(() => {}); }, [pos]);
+  useEffect(() => { AsyncStorage.setItem(SIZE_KEY, size).catch(() => {}); }, [size]);
 
-  function getPositionStyle(p: Pos, sizeKey: Size) {
-    const style: any = { position: 'absolute' };
-    if (p.includes('top')) style.top = 12;
-    if (p.includes('bottom')) style.bottom = 12;
-    if (p.includes('left')) style.left = 12;
-    if (p.includes('right')) style.right = 12;
-
-    if (p === 'top-center') {
-      style.left = '50%';
-      style.transform = [{ translateX: '-50%' }];
-    }
-    if (p === 'bottom-center') {
-      style.left = '50%';
-      style.transform = [{ translateX: '-50%' }];
-    }
-    if (p === 'center') {
-      style.left = '50%';
-      style.top = '50%';
-      style.transform = [{ translateX: '-50%' }, { translateY: '-50%' }];
-    }
-    if (p === 'center-left') {
-      style.top = '50%';
-      style.transform = [{ translateY: '-50%' }];
-    }
-    if (p === 'center-right') {
-      style.top = '50%';
-      style.transform = [{ translateY: '-50%' }];
-    }
-
-    return style;
-  }
-
-  async function handleCopy() {
+  function handleCopy() {
     try {
       const text = exportBufferedLogs('text', 1000);
-      try {
-        const Clipboard = require('@react-native-clipboard/clipboard');
-        if (Clipboard && Clipboard.setString) {
-          Clipboard.setString(text);
-        } else {
-          const RNClipboard = require('react-native').Clipboard;
-          if (RNClipboard && RNClipboard.setString) RNClipboard.setString(text);
-        }
-      } catch (_) {
-        Alert.alert('Copy not available', text.slice(0, 1024));
-      }
+      const Clipboard = require('@react-native-clipboard/clipboard');
+      Clipboard?.setString?.(text);
       Alert.alert('Copied', 'Debug logs copied to clipboard.');
     } catch (e: any) {
       Alert.alert('Copy failed', String(e));
@@ -121,16 +82,13 @@ export default function DebugOverlay(): JSX.Element | null {
       const body = encodeURIComponent(exportBufferedLogs('text', 1000));
       const subject = encodeURIComponent(`OrionTV Debug Logs ${new Date().toISOString()}`);
       const mailto = `mailto:${encodeURIComponent(to)}?subject=${subject}&body=${body}`;
-
       const { Linking } = require('react-native');
       const can = await Linking.canOpenURL(mailto);
       if (can) {
         await Linking.openURL(mailto);
       } else {
-        try {
-          const Clipboard = require('@react-native-clipboard/clipboard');
-          if (Clipboard && Clipboard.setString) Clipboard.setString(decodeURIComponent(body));
-        } catch (_) {}
+        const Clipboard = require('@react-native-clipboard/clipboard');
+        Clipboard?.setString?.(decodeURIComponent(body));
         Alert.alert('Email client unavailable', 'Logs copied to clipboard; paste into your email client.');
       }
     } catch (e: any) {
@@ -138,11 +96,12 @@ export default function DebugOverlay(): JSX.Element | null {
     }
   }
 
-  const sizeStyle = { width: SIZE_MAP[size].width, height: SIZE_MAP[size].height };
-  const positionStyle = getPositionStyle(pos, size);
-  const containerStyle = [styles.container, sizeStyle, positionStyle] as any;
+  // Cast imported component so TypeScript recognizes its props
+  const Controls = DebugOverlayControls as React.ComponentType<DebugOverlayControlsProps>;
 
-  if (!__DEV__ && process.env.DEBUG_OVERLAY !== 'true') return null;
+  const sizeStyle: StyleProp<ViewStyle> = { width: SIZE_MAP[size].width as any, height: SIZE_MAP[size].height as any };
+  const positionStyle: StyleProp<ViewStyle> = getPositionStyle(pos);
+  const containerStyle: StyleProp<ViewStyle> = [styles.container, sizeStyle, positionStyle];
 
   return (
     <View pointerEvents="box-none" style={containerStyle}>
@@ -159,23 +118,44 @@ export default function DebugOverlay(): JSX.Element | null {
       </View>
 
       <ScrollView style={styles.body}>
-        {logs.slice().reverse().map((l: OverlayLog, i: number) => (
+        {logs.slice().reverse().map((l, i) => (
           <Text key={i} style={styles.logLine}>
-            {`${new Date(l.ts).toISOString()} ${l.level} ${
-              typeof l.message === 'string' ? l.message : JSON.stringify(l.message)
-            }`}
+            {`${new Date(l.ts).toISOString()} ${l.level} ${typeof l.message === 'string' ? l.message : JSON.stringify(l.message)}`}
           </Text>
         ))}
       </ScrollView>
 
-      <DebugOverlayControls
-        defaultPosition={pos}
-        defaultSize={size}
-        onChangePosition={(p) => setPos(p)}
-        onChangeSize={(s) => setSize(s)}
+      <Controls
+        visible={true}
+        defaultPosition={pos as any}
+        defaultSize={size as any}
+        onChangePosition={(p: PosType) => setPos(p)}
+        onChangeSize={(s: SizeType) => setSize(s)}
       />
     </View>
   );
+}
+
+function getPositionStyle(p: PosType): StyleProp<ViewStyle> {
+  const style: any = { position: 'absolute' };
+  if (p.includes('top')) style.top = 12;
+  if (p.includes('bottom')) style.bottom = 12;
+  if (p.includes('left')) style.left = 12;
+  if (p.includes('right')) style.right = 12;
+  if (p === 'top-center' || p === 'bottom-center') {
+    style.left = '50%';
+    style.transform = [{ translateX: -150 }];
+  }
+  if (p === 'center') {
+    style.left = '50%';
+    style.top = '50%';
+    style.transform = [{ translateX: -150 }, { translateY: -100 }];
+  }
+  if (p === 'center-left' || p === 'center-right') {
+    style.top = '50%';
+    style.transform = [{ translateY: -100 }];
+  }
+  return style as StyleProp<ViewStyle>;
 }
 
 const styles = StyleSheet.create({
@@ -187,7 +167,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  title: { color: '#fff', fontWeight: '700' },
+  title: { color: '#ff3b3b', fontWeight: '700', fontSize: 14 },
   headerRight: { flexDirection: 'row' },
   headerBtn: { marginLeft: 8, backgroundColor: '#222', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4 },
   btnText: { color: '#fff', fontSize: 12 },
