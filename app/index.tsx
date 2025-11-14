@@ -11,7 +11,7 @@ if (__DEV__) {
     //
   }
 }
-import './utils/logger_augment';
+import '../utils/logger_augment';
 import React, { useEffect, useCallback, useRef, useState } from "react";
 import { AppState, View, StyleSheet, ActivityIndicator, FlatList, Pressable, Animated, StatusBar, Platform, BackHandler, ToastAndroid } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
