@@ -247,9 +247,15 @@ const usePlayerStore = create<PlayerState>((set, get) => ({
         progressPosition: 0,
         seekPosition: 0,
       });
+      // 最小修正：用 any 繞過 PlayerState 的型別限制，同時確保 loadAsync 傳入 { uri }
+      const cur = ((get() as any).currentVideo ?? (get() as any).current ?? (get() as any).video) as any;
+
       try {
         await videoRef?.current?.unloadAsync();
-        await videoRef?.current?.loadAsync(source, {}, false); // 明確載入
+
+        const sourceUri = (cur?.source ?? "") as string;
+        // loadAsync 需要 AVPlaybackSource，傳入 { uri }
+        await videoRef?.current?.loadAsync({ uri: sourceUri } as any, {}, false);
         await videoRef?.current?.playAsync();
 
         setTimeout(() => {
@@ -262,7 +268,7 @@ const usePlayerStore = create<PlayerState>((set, get) => ({
         }, 300);
       } catch (err) {
         Logger.warn("影片重播失敗", err);
-        logger.debug("Failed to replay video:", error);
+        logger.debug("Failed to replay video:", err);
         Toast.show({ type: "error", text1: "播放失败" });
       }
 

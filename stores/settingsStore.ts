@@ -47,7 +47,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   debugOverlayEnabled: false,
 
   loadSettings: async () => {
-    const settings = await SettingsManager.get();
+    const settings = (await SettingsManager.get()) as any;
     set({
       apiBaseUrl: settings.apiBaseUrl,
       m3uUrl: settings.m3uUrl,
@@ -57,7 +57,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
           enabledAll: true,
           sources: {},
         },
-      debugOverlayEnabled: !!settings.debugOverlayEnabled,
+      debugOverlayEnabled: !!(settings as any).debugOverlayEnabled,
     });
     if (settings.apiBaseUrl) {
       api.setBaseUrl(settings.apiBaseUrl);
@@ -114,7 +114,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       remoteInputEnabled,
       videoSource,
       debugOverlayEnabled,
-    });
+    } as any);
 
     api.setBaseUrl(processedApiBaseUrl);
     // Also update the URL in the state so the input field shows the processed URL
@@ -128,8 +128,8 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   setDebugOverlayEnabled: async (enabled: boolean) => {
     try {
       // persist immediately so next app start respects user choice
-      const current = await SettingsManager.get();
-      await SettingsManager.save({ ...current, debugOverlayEnabled: !!enabled });
+      const current = (await SettingsManager.get()) as any;
+      await SettingsManager.save({ ...(current as any), debugOverlayEnabled: !!enabled } as any);
     } catch (err) {
       logger.warn("Failed to persist debugOverlayEnabled", err);
     } finally {

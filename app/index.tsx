@@ -11,7 +11,7 @@ if (__DEV__) {
     //
   }
 }
-
+import './utils/logger_augment';
 import React, { useEffect, useCallback, useRef, useState } from "react";
 import { AppState, View, StyleSheet, ActivityIndicator, FlatList, Pressable, Animated, StatusBar, Platform, BackHandler, ToastAndroid } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -30,8 +30,8 @@ import { getCommonResponsiveStyles } from "@/utils/ResponsiveStyles";
 import ResponsiveNavigation from "@/components/navigation/ResponsiveNavigation";
 import { useApiConfig, getApiConfigErrorMessage } from "@/hooks/useApiConfig";
 import { Colors } from "@/constants/Colors";
-import DebugOverlay from "../src/debug/DebugOverlay";
-import { startDebugOverlay } from "../src/debug/debugLauncher";
+import DebugOverlay from "@/utils/debug/DebugOverlay";
+import { startDebugOverlay } from "@/utils/debug/debugLauncher";
 
 const LOAD_MORE_THRESHOLD = 200;
 

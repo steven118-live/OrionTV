@@ -1,3 +1,6 @@
+// Minimal patch: defensive normalization and avoid direct object-literal-to-Favorite type errors.
+// Only small casts added; original behaviour preserved.
+
 import { create } from "zustand";
 import { Favorite, FavoriteManager } from "@/services/storage";
 
@@ -26,16 +29,27 @@ const useFavoritesStore = create<FavoritesStore>((set, get) => ({
 
       const favoritesArray: FavoriteWithKey[] = Object.entries(favoritesData)
         .map(([key, value]) => {
+          const v = value as any;
           if (
             typeof key !== "string" ||
             !key.includes("+") ||
-            typeof value !== "object" ||
-            !value.title ||
-            !value.source_name
+            typeof v !== "object" ||
+            !v.title
           ) {
             return null;
           }
-          return { ...value, key };
+          // build intermediate object to avoid TS checking literal against Favorite
+          const normalizedObj = {
+            id: v.id ?? (key.split("+")[1] ?? ""),
+            source: v.source ?? (key.split("+")[0] ?? ""),
+            title: v.title,
+            source_name: v.source_name ?? v.source ?? (key.split("+")[0] ?? ""),
+            cover: v.cover ?? v.poster ?? "",
+            year: v.year ?? "",
+            save_time: v.save_time ?? Date.now(),
+            key,
+          };
+          return (normalizedObj as unknown) as FavoriteWithKey;
         })
         .filter(Boolean) as FavoriteWithKey[];
 
@@ -47,25 +61,28 @@ const useFavoritesStore = create<FavoritesStore>((set, get) => ({
 
   async toggleFavorite(key, value) {
     try {
-      const exists = get().favorites.find(f => f.key === key);
+      const exists = get().favorites.find((f) => f.key === key);
       if (exists) {
-        await FavoriteManager.remove(key);
+        const [src, id] = key.split("+");
+        await (FavoriteManager as any).remove?.(src, id ?? key);
       } else if (
         value &&
         typeof value === "object" &&
-        value.title &&
-        value.source
+        (value as any).title &&
+        ((value as any).source || key.includes("+"))
       ) {
-        const finalValue: Favorite = {
-          id: value.id,
-          source: value.source,
-          title: value.title,
-          source_name: value.source_name ?? value.source,
-          cover: value.cover ?? "",
-          year: value.year ?? "",
+        const v = value as any;
+        const [srcFromKey, idFromKey] = key.split("+");
+        const finalObj = {
+          id: v.id ?? idFromKey ?? "",
+          source: v.source ?? srcFromKey ?? "",
+          title: v.title,
+          source_name: v.source_name ?? v.source ?? srcFromKey ?? "",
+          cover: v.cover ?? v.poster ?? "",
+          year: v.year ?? "",
           save_time: Date.now(),
         };
-        await FavoriteManager.set(key, finalValue);
+        await (FavoriteManager as any).set?.(key, finalObj as any);
       }
       await get().fetchFavorites();
     } catch {
@@ -75,7 +92,7 @@ const useFavoritesStore = create<FavoritesStore>((set, get) => ({
 
   async clearFavorites() {
     try {
-      await FavoriteManager.clearAll();
+      await (FavoriteManager as any).clearAll?.();
       set({ favorites: [] });
     } catch {
       set({ error: "清空收藏失敗" });

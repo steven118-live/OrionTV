@@ -1,0 +1,20 @@
+yarn run v1.22.22
+$ D:\gith\apps\OrionTV\node_modules\.bin\tsc --noEmit --pretty
+[96mutils/__tests__/ResponsiveStyles.test.ts[0m:[93m35[0m:[93m27[0m - [91merror[0m[90m TS2352: [0mConversion of type '{ deviceType: "mobile"; spacing: number; safeAreaInsets: { top: number; bottom: number; left: number; right: number; }; windowWidth: number; windowHeight: number; isLandscape: boolean; }' to type 'ResponsiveConfig' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type '{ deviceType: "mobile"; spacing: number; safeAreaInsets: { top: number; bottom: number; left: number; right: number; }; windowWidth: number; windowHeight: number; isLandscape: boolean; }' is missing the following properties from type 'ResponsiveConfig': columns, cardWidth, cardHeight, isPortrait, and 2 more.
+
+[7m 35[0m   const mockConfig: any = {
+[7m   [0m [91m                          ~[0m
+[7m 36[0m     deviceType: "mobile",
+[7m   [0m [91m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[7m...[0m 
+[7m 41[0m     isLandscape: false,
+[7m   [0m [91m~~~~~~~~~~~~~~~~~~~~~~~[0m
+[7m 42[0m   } as ResponsiveConfig;
+[7m   [0m [91m~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+Found 1 error in utils/__tests__/ResponsiveStyles.test.ts[90m:35[0m
+
+error Command failed with exit code 2.
+info Visit https://yarnpkg.com/en/docs/cli/run for documentation about this command.

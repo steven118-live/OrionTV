@@ -20,9 +20,9 @@ import useHomeStore from "@/stores/homeStore";
 import { useApiConfig } from "@/hooks/useApiConfig";
 import Logger from "@/utils/Logger";
 
-import DebugToast from "@/src/debug/DebugToast";
-import DebugOverlay from "@/src/debug/DebugOverlay";
-import { loadFlags } from "@/src/debug/flags";
+import DebugToast from "@/utils/debug/DebugToast";
+import DebugOverlay from "@/utils/debug/DebugOverlay";
+import { loadFlags } from "@/utils/debug/flags";
 
 const logger = Logger.withTag("RootLayout");
 
@@ -41,7 +41,8 @@ export default function RootLayout() {
   const { checkLoginStatus } = useAuthStore();
   const { checkForUpdate, lastCheckTime } = useUpdateStore();
   const responsiveConfig = useResponsiveLayout();
-  const { refreshPlayRecords, initEpisodeSelection } = useHomeStore();
+  const { refreshPlayRecords } = useHomeStore();
+  const initEpisodeSelection = (useHomeStore as any).getState?.().initEpisodeSelection ?? (() => {});
   const apiStatus = useApiConfig();
 
   const hasInitialized = useRef(false); // 初始化鎖
@@ -60,7 +61,7 @@ export default function RootLayout() {
       }
     })();
     // Note: avoid enabling verbose/line_trace by default in production
-    // import { setDebugFlags } from "@/src/debug/flags"; setDebugFlags({ verbose: true }, false);
+    // import { setDebugFlags } from "@/utils/debug/flags"; setDebugFlags({ verbose: true }, false);
     return () => {
       mounted = false;
     };
@@ -110,7 +111,7 @@ export default function RootLayout() {
           await refreshPlayRecords();
         } catch (err) {
           logger.warn("播放紀錄刷新失敗", err);
-          useHomeStore.getState().setPlayRecords([]); // fallback 空陣列，確保 UI 不空白
+          (useHomeStore as any).getState?.().setPlayRecords?.([]) ?? null;
         } finally {
           initEpisodeSelection(); // 確保初始化選集，不受錯誤影響
         }

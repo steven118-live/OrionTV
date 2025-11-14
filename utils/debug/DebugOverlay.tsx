@@ -1,3 +1,9 @@
+// Minimal patch: make timers and globals TypeScript-safe (no new files).
+// - use numeric timer refs (React Native setTimeout returns number).
+// - use (global as any) guards for __pushAppDebug.
+// - guard Platform.isTV access and Pressable ref usage.
+// - avoid NodeJS.Timeout type so tsc doesn't complain in RN environment.
+
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   BackHandler,
@@ -24,37 +30,39 @@ export default function DebugOverlay() {
   const [logs, setLogs] = useState<string[]>([]);
   const mountedRef = useRef(true);
   const pendingRef = useRef<string[]>([]);
-  const batchTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const batchTimerRef = useRef<number | null>(null);
   const closeRef = useRef<any>(null);
 
   useEffect(() => {
     mountedRef.current = true;
     // safe global push that batches UI updates
-    // @ts-ignore
-    globalThis.__pushAppDebug = (msg: string) => {
+    (global as any).__pushAppDebug = (msg: string) => {
       try {
         if (!mountedRef.current) return;
         pendingRef.current.push(`${new Date().toLocaleTimeString()} ${msg}`);
         if (!batchTimerRef.current) {
-          batchTimerRef.current = setTimeout(() => {
-            setLogs((prev) => {
-              const batch = pendingRef.current.splice(0);
+          batchTimerRef.current = (setTimeout(() => {
+            try {
+              setLogs((prev) => {
+                const batch = pendingRef.current.splice(0);
+                batchTimerRef.current = null;
+                const next = prev.concat(batch).slice(-200);
+                return next;
+              });
+            } catch (_) {
               batchTimerRef.current = null;
-              const next = prev.concat(batch).slice(-200);
-              return next;
-            });
-          }, 180);
+            }
+          }, 180) as unknown) as number;
         }
       } catch (_) {}
     };
     return () => {
       mountedRef.current = false;
-      // @ts-ignore
       try {
-        delete globalThis.__pushAppDebug;
+        delete (global as any).__pushAppDebug;
       } catch (_) {}
-      if (batchTimerRef.current) {
-        clearTimeout(batchTimerRef.current);
+      if (batchTimerRef.current !== null) {
+        clearTimeout(batchTimerRef.current as number);
         batchTimerRef.current = null;
       }
     };
@@ -70,13 +78,18 @@ export default function DebugOverlay() {
       return false;
     };
     const sub = BackHandler.addEventListener("hardwareBackPress", handler);
-    return () => sub.remove();
+    return () => {
+      try {
+        sub.remove();
+      } catch (_) {}
+    };
   }, [open]);
 
   // When panel opens, on TV request focus for closeRef by rendering hasTVPreferredFocus on it
   useEffect(() => {
     // small microtask to allow component to mount before focus hint
-    if (open && Platform.isTV && closeRef.current && typeof closeRef.current.setNativeProps === "function") {
+    const isTV = (Platform as any).isTV;
+    if (open && isTV && closeRef.current && typeof closeRef.current.setNativeProps === "function") {
       try {
         // hasTVPreferredFocus prop on Pressable will do the main job; this is a light fallback
         closeRef.current.setNativeProps?.({ hasTVPreferredFocus: true });
@@ -88,10 +101,15 @@ export default function DebugOverlay() {
   const copyLogs = useCallback(async () => {
     try {
       const joined = logs.join("\n");
-      const Clipboard = require("@react-native-clipboard/clipboard");
-      Clipboard && Clipboard.setString(joined);
-      // @ts-ignore
-      globalThis.__pushAppDebug?.("[DBG_COPY] logs copied");
+      // runtime require so TS doesn't demand types
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const ClipboardModule: any = require("@react-native-clipboard/clipboard");
+      if (ClipboardModule && typeof ClipboardModule.setString === "function") {
+        ClipboardModule.setString(joined);
+      } else if (ClipboardModule && typeof ClipboardModule.default?.setString === "function") {
+        ClipboardModule.default.setString(joined);
+      }
+      (global as any).__pushAppDebug?.("[DBG_COPY] logs copied");
     } catch (_) {}
   }, [logs]);
 

@@ -8,7 +8,13 @@
  * - 但要讓 UI 真的渲染 Overlay，需要在 App 根（index.tsx 或 App root）放一個 conditional render，該 render 只讀取 global flag (一次性改動)
  */
 
-import { ensureGlobalPush } from "./DebugOverlay";
+import * as DebugOverlayMod from "./DebugOverlay";
+const ensureGlobalPush =
+  (DebugOverlayMod as any).ensureGlobalPush ??
+  (DebugOverlayMod as any).default ??
+  (DebugOverlayMod as any);
+
+import Logger from "@/utils/Logger";
 
 // flag name 決定 UI 是否顯示 overlay
 const FLAG = "__DEBUG_OVERLAY_ENABLED__";

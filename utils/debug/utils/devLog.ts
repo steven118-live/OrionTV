@@ -1,5 +1,6 @@
 // src/utils/devLog.ts
-import Logger from "../../../utils/Logger";
+import Logger from '../../Logger';
+
 
 const DEFAULT_TAG = "DevLog";
 const shortLogger = Logger?.withTag?.(DEFAULT_TAG) ?? Logger;

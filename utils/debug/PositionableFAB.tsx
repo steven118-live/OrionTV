@@ -9,7 +9,6 @@ import {
   Text,
   TouchableOpacity,
   ViewStyle,
-  TVEventHandler,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
@@ -40,6 +39,7 @@ const DEFAULT_STORAGE_KEY = "DBG_FAB_POS";
 const DRAG_THRESHOLD = 4;
 const LONG_PRESS_MS = 600;
 
+// percent positions stored as strings to allow CSS-like placement
 const presets: Record<Preset, { left: string; top: string }> = {
   "right-bottom": { left: "90%", top: "90%" },
   "right-center": { left: "90%", top: "50%" },
@@ -147,15 +147,26 @@ export default function PositionableFAB({
   ).current;
 
   useEffect(() => {
-    // TV fallback: use TVEventHandler if available to detect select/ok presses reliably
     if (!Platform.isTV) return;
     try {
-      const tvHandler = new TVEventHandler();
-      tvHandler.enable(null, (_cmp, evt) => {
-        // evt.eventType may be 'select' on some runtimes; on AndroidTV some use keyDown events
-        const t = (evt && (evt.eventType || evt.type)) || null;
-        if (t === "select" || t === "playPause" || (evt && (evt.action === "select" || evt.eventKeyAction === 0))) {
-          // treat as OK/select
+      // Some RN versions expose TVEventHandler differently. Use require and runtime resolution
+      // to obtain a constructor/function safely and avoid TS construct signature error.
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const RN: any = require("react-native");
+      const TVEventHandlerModule = RN.TVEventHandler ?? RN["react-native/Libraries/Components/Touchable/TVEventHandler"];
+      const TVCtor = (TVEventHandlerModule && (TVEventHandlerModule.default ?? TVEventHandlerModule)) ?? null;
+      if (!TVCtor) {
+        tvEventHandlerRef.current = null;
+        return;
+      }
+      const tvHandler = new (TVCtor as any)();
+      tvHandler.enable(null, (_cmp: any, evt: any) => {
+        const t = (evt && (evt.eventType || (evt as any).type)) || null;
+        if (
+          t === "select" ||
+          t === "playPause" ||
+          (evt && (evt.action === "select" || (evt as any).eventKeyAction === 0))
+        ) {
           onPress();
         }
       });
@@ -166,7 +177,11 @@ export default function PositionableFAB({
     return () => {
       try {
         if (tvEventHandlerRef.current) {
-          tvEventHandlerRef.current.disable();
+          if (typeof tvEventHandlerRef.current.disable === "function") {
+            tvEventHandlerRef.current.disable();
+          } else if (typeof tvEventHandlerRef.current.remove === "function") {
+            tvEventHandlerRef.current.remove();
+          }
           tvEventHandlerRef.current = null;
         }
       } catch (_) {}
@@ -192,8 +207,8 @@ export default function PositionableFAB({
 
   const containerStyle: ViewStyle = {
     position: "absolute",
-    left: presets[preset].left,
-    top: presets[preset].top,
+    left: (presets[preset].left as any) as ViewStyle["left"],
+    top: (presets[preset].top as any) as ViewStyle["top"],
     zIndex: 99999,
   };
 
@@ -205,7 +220,6 @@ export default function PositionableFAB({
         onPressIn={onPressIn}
         onPressOut={onPressOut}
         activeOpacity={0.85}
-        focusable={true}
         accessibilityRole="button"
         accessibilityLabel={`Debug button, position ${preset}`}
         hasTVPreferredFocus={false}

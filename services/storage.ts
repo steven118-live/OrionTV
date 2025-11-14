@@ -128,8 +128,8 @@ export class FavoriteManager {
     await api.addFavorite(key, item);
   }
 
-  static async remove(source: string, id: string): Promise<void> {
-    const key = generateKey(source, id);
+  static async remove(source: string, id?: string): Promise<void> {
+    const key = generateKey(source, id ?? "");
     if (this.getStorageType() === "localstorage") {
       const allFavorites = await this.getAll();
       delete allFavorites[key];

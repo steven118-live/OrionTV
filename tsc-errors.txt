@@ -1,0 +1,405 @@
+yarn run v1.22.22
+$ D:\gith\apps\OrionTV\node_modules\.bin\tsc --noEmit --pretty
+[96mapp/favorites.tsx[0m:[93m70[0m:[93m9[0m - [91merror[0m[90m TS2322: [0mType '{ id: string; source: string; title: string; sourceName: string; poster: string; year: string; api: API; episodeIndex: number; progress: number; onUnfavorite: () => Promise<void>; }' is not assignable to type 'IntrinsicAttributes & VideoCardProps & RefAttributes<any>'.
+  Property 'onUnfavorite' does not exist on type 'IntrinsicAttributes & VideoCardProps & RefAttributes<any>'.
+
+[7m70[0m         onUnfavorite={() => handleCardUnfavorite(item)}
+[7m  [0m [91m        ~~~~~~~~~~~~[0m
+
+[96mapp/search.tsx[0m:[93m24[0m:[93m20[0m - [91merror[0m[90m TS7016: [0mCould not find a declaration file for module 'opencc-js'. 'D:/gith/apps/OrionTV/node_modules/opencc-js/dist/umd/full.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/opencc-js` if it exists or add a new declaration (.d.ts) file containing `declare module 'opencc-js';`
+
+[7m24[0m import OpenCC from "opencc-js";
+[7m  [0m [91m                   ~~~~~~~~~~~[0m
+
+[96mcomponents/DebugOverlayToggle.tsx[0m:[93m5[0m:[93m26[0m - [91merror[0m[90m TS2307: [0mCannot find module '@/utils/debug/logger' or its corresponding type declarations.
+
+[7m5[0m import { debugLog } from "@/utils/debug/logger";
+[7m [0m [91m                         ~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96mstores/favoritesStore.ts[0m:[93m52[0m:[93m31[0m - [91merror[0m[90m TS2554: [0mExpected 2 arguments, but got 1.
+
+[7m52[0m         await FavoriteManager.remove(key);
+[7m  [0m [91m                              ~~~~~~~~~~~[0m
+
+  [96mservices/storage.ts[0m:[93m131[0m:[93m39[0m
+    [7m131[0m   static async remove(source: string, id: string): Promise<void> {
+    [7m   [0m [96m                                      ~~~~~~~~~~[0m
+    An argument for 'id' was not provided.
+
+[96mstores/favoritesStore.ts[0m:[93m57[0m:[93m15[0m - [91merror[0m[90m TS2339: [0mProperty 'source' does not exist on type 'Favorite'.
+
+[7m57[0m         value.source
+[7m  [0m [91m              ~~~~~~[0m
+
+[96mstores/favoritesStore.ts[0m:[93m60[0m:[93m11[0m - [91merror[0m[90m TS2353: [0mObject literal may only specify known properties, and 'id' does not exist in type 'Favorite'.
+
+[7m60[0m           id: value.id,
+[7m  [0m [91m          ~~[0m
+
+[96mstores/favoritesStore.ts[0m:[93m60[0m:[93m21[0m - [91merror[0m[90m TS2339: [0mProperty 'id' does not exist on type 'Favorite'.
+
+[7m60[0m           id: value.id,
+[7m  [0m [91m                    ~~[0m
+
+[96mstores/favoritesStore.ts[0m:[93m61[0m:[93m25[0m - [91merror[0m[90m TS2339: [0mProperty 'source' does not exist on type 'Favorite'.
+
+[7m61[0m           source: value.source,
+[7m  [0m [91m                        ~~~~~~[0m
+
+[96mstores/favoritesStore.ts[0m:[93m63[0m:[93m51[0m - [91merror[0m[90m TS2339: [0mProperty 'source' does not exist on type 'Favorite'.
+
+[7m63[0m           source_name: value.source_name ?? value.source,
+[7m  [0m [91m                                                  ~~~~~~[0m
+
+[96mstores/favoritesStore.ts[0m:[93m68[0m:[93m31[0m - [91merror[0m[90m TS2339: [0mProperty 'set' does not exist on type 'typeof FavoriteManager'.
+
+[7m68[0m         await FavoriteManager.set(key, finalValue);
+[7m  [0m [91m                              ~~~[0m
+
+[96mstores/playerStore.ts[0m:[93m252[0m:[93m44[0m - [91merror[0m[90m TS2304: [0mCannot find name 'source'.
+
+[7m252[0m         await videoRef?.current?.loadAsync(source, {}, false); // 明確載入
+[7m   [0m [91m                                           ~~~~~~[0m
+
+[96mstores/playerStore.ts[0m:[93m265[0m:[93m49[0m - [91merror[0m[90m TS2552: [0mCannot find name 'error'. Did you mean 'err'?
+
+[7m265[0m         logger.debug("Failed to replay video:", error);
+[7m   [0m [91m                                                ~~~~~[0m
+
+  [96mstores/playerStore.ts[0m:[93m263[0m:[93m16[0m
+    [7m263[0m       } catch (err) {
+    [7m   [0m [96m               ~~~[0m
+    'err' is declared here.
+
+[96mstores/settingsStore.ts[0m:[93m60[0m:[93m39[0m - [91merror[0m[90m TS2339: [0mProperty 'debugOverlayEnabled' does not exist on type 'AppSettings'.
+
+[7m60[0m       debugOverlayEnabled: !!settings.debugOverlayEnabled,
+[7m  [0m [91m                                      ~~~~~~~~~~~~~~~~~~~[0m
+
+[96mstores/settingsStore.ts[0m:[93m116[0m:[93m7[0m - [91merror[0m[90m TS2353: [0mObject literal may only specify known properties, and 'debugOverlayEnabled' does not exist in type 'Partial<AppSettings>'.
+
+[7m116[0m       debugOverlayEnabled,
+[7m   [0m [91m      ~~~~~~~~~~~~~~~~~~~[0m
+
+[96mstores/settingsStore.ts[0m:[93m132[0m:[93m48[0m - [91merror[0m[90m TS2353: [0mObject literal may only specify known properties, and 'debugOverlayEnabled' does not exist in type 'Partial<AppSettings>'.
+
+[7m132[0m       await SettingsManager.save({ ...current, debugOverlayEnabled: !!enabled });
+[7m   [0m [91m                                               ~~~~~~~~~~~~~~~~~~~[0m
+
+[96mutils/__tests__/DeviceUtils.test.ts[0m:[93m19[0m:[93m44[0m - [91merror[0m[90m TS2345: [0mArgument of type '{ width: number; height: number; }' is not assignable to parameter of type 'ScaledSize'.
+  Type '{ width: number; height: number; }' is missing the following properties from type 'ScaledSize': scale, fontScale
+
+[7m19[0m       mockedDimensions.get.mockReturnValue({ width: 1024, height: 768 });
+[7m  [0m [91m                                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96mutils/__tests__/DeviceUtils.test.ts[0m:[93m24[0m:[93m44[0m - [91merror[0m[90m TS2345: [0mArgument of type '{ width: number; height: number; }' is not assignable to parameter of type 'ScaledSize'.
+  Type '{ width: number; height: number; }' is missing the following properties from type 'ScaledSize': scale, fontScale
+
+[7m24[0m       mockedDimensions.get.mockReturnValue({ width: 768, height: 1024 });
+[7m  [0m [91m                                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96mutils/__tests__/DeviceUtils.test.ts[0m:[93m29[0m:[93m44[0m - [91merror[0m[90m TS2345: [0mArgument of type '{ width: number; height: number; }' is not assignable to parameter of type 'ScaledSize'.
+  Type '{ width: number; height: number; }' is missing the following properties from type 'ScaledSize': scale, fontScale
+
+[7m29[0m       mockedDimensions.get.mockReturnValue({ width: 375, height: 812 });
+[7m  [0m [91m                                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96mutils/__tests__/DeviceUtils.test.ts[0m:[93m36[0m:[93m44[0m - [91merror[0m[90m TS2345: [0mArgument of type '{ width: number; height: number; }' is not assignable to parameter of type 'ScaledSize'.
+  Type '{ width: number; height: number; }' is missing the following properties from type 'ScaledSize': scale, fontScale
+
+[7m36[0m       mockedDimensions.get.mockReturnValue({ width: 1920, height: 1080 });
+[7m  [0m [91m                                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96mutils/__tests__/DeviceUtils.test.ts[0m:[93m41[0m:[93m44[0m - [91merror[0m[90m TS2345: [0mArgument of type '{ width: number; height: number; }' is not assignable to parameter of type 'ScaledSize'.
+  Type '{ width: number; height: number; }' is missing the following properties from type 'ScaledSize': scale, fontScale
+
+[7m41[0m       mockedDimensions.get.mockReturnValue({ width: 375, height: 812 });
+[7m  [0m [91m                                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96mutils/__tests__/DeviceUtils.test.ts[0m:[93m48[0m:[93m44[0m - [91merror[0m[90m TS2345: [0mArgument of type '{ width: number; height: number; }' is not assignable to parameter of type 'ScaledSize'.
+  Type '{ width: number; height: number; }' is missing the following properties from type 'ScaledSize': scale, fontScale
+
+[7m48[0m       mockedDimensions.get.mockReturnValue({ width: 375, height: 812 });
+[7m  [0m [91m                                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96mutils/__tests__/DeviceUtils.test.ts[0m:[93m53[0m:[93m44[0m - [91merror[0m[90m TS2345: [0mArgument of type '{ width: number; height: number; }' is not assignable to parameter of type 'ScaledSize'.
+  Type '{ width: number; height: number; }' is missing the following properties from type 'ScaledSize': scale, fontScale
+
+[7m53[0m       mockedDimensions.get.mockReturnValue({ width: 1024, height: 768 });
+[7m  [0m [91m                                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96mutils/__tests__/DeviceUtils.test.ts[0m:[93m60[0m:[93m44[0m - [91merror[0m[90m TS2345: [0mArgument of type '{ width: number; height: number; }' is not assignable to parameter of type 'ScaledSize'.
+  Type '{ width: number; height: number; }' is missing the following properties from type 'ScaledSize': scale, fontScale
+
+[7m60[0m       mockedDimensions.get.mockReturnValue({ width: 768, height: 1024 });
+[7m  [0m [91m                                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96mutils/__tests__/DeviceUtils.test.ts[0m:[93m65[0m:[93m44[0m - [91merror[0m[90m TS2345: [0mArgument of type '{ width: number; height: number; }' is not assignable to parameter of type 'ScaledSize'.
+  Type '{ width: number; height: number; }' is missing the following properties from type 'ScaledSize': scale, fontScale
+
+[7m65[0m       mockedDimensions.get.mockReturnValue({ width: 375, height: 812 });
+[7m  [0m [91m                                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96mutils/__tests__/DeviceUtils.test.ts[0m:[93m72[0m:[93m44[0m - [91merror[0m[90m TS2345: [0mArgument of type '{ width: number; height: number; }' is not assignable to parameter of type 'ScaledSize'.
+  Type '{ width: number; height: number; }' is missing the following properties from type 'ScaledSize': scale, fontScale
+
+[7m72[0m       mockedDimensions.get.mockReturnValue({ width: 375, height: 812 });
+[7m  [0m [91m                                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96mutils/__tests__/DeviceUtils.test.ts[0m:[93m77[0m:[93m44[0m - [91merror[0m[90m TS2345: [0mArgument of type '{ width: number; height: number; }' is not assignable to parameter of type 'ScaledSize'.
+  Type '{ width: number; height: number; }' is missing the following properties from type 'ScaledSize': scale, fontScale
+
+[7m77[0m       mockedDimensions.get.mockReturnValue({ width: 1920, height: 1080 });
+[7m  [0m [91m                                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96mutils/__tests__/DeviceUtils.test.ts[0m:[93m84[0m:[93m44[0m - [91merror[0m[90m TS2345: [0mArgument of type '{ width: number; height: number; }' is not assignable to parameter of type 'ScaledSize'.
+  Type '{ width: number; height: number; }' is missing the following properties from type 'ScaledSize': scale, fontScale
+
+[7m84[0m       mockedDimensions.get.mockReturnValue({ width: 1920, height: 1080 });
+[7m  [0m [91m                                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96mutils/__tests__/DeviceUtils.test.ts[0m:[93m89[0m:[93m44[0m - [91merror[0m[90m TS2345: [0mArgument of type '{ width: number; height: number; }' is not assignable to parameter of type 'ScaledSize'.
+  Type '{ width: number; height: number; }' is missing the following properties from type 'ScaledSize': scale, fontScale
+
+[7m89[0m       mockedDimensions.get.mockReturnValue({ width: 375, height: 812 });
+[7m  [0m [91m                                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96mutils/__tests__/DeviceUtils.test.ts[0m:[93m96[0m:[93m44[0m - [91merror[0m[90m TS2345: [0mArgument of type '{ width: number; height: number; }' is not assignable to parameter of type 'ScaledSize'.
+  Type '{ width: number; height: number; }' is missing the following properties from type 'ScaledSize': scale, fontScale
+
+[7m96[0m       mockedDimensions.get.mockReturnValue({ width: 375, height: 812 });
+[7m  [0m [91m                                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96mutils/__tests__/DeviceUtils.test.ts[0m:[93m101[0m:[93m44[0m - [91merror[0m[90m TS2345: [0mArgument of type '{ width: number; height: number; }' is not assignable to parameter of type 'ScaledSize'.
+  Type '{ width: number; height: number; }' is missing the following properties from type 'ScaledSize': scale, fontScale
+
+[7m101[0m       mockedDimensions.get.mockReturnValue({ width: 768, height: 1024 });
+[7m   [0m [91m                                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96mutils/__tests__/DeviceUtils.test.ts[0m:[93m106[0m:[93m44[0m - [91merror[0m[90m TS2345: [0mArgument of type '{ width: number; height: number; }' is not assignable to parameter of type 'ScaledSize'.
+  Type '{ width: number; height: number; }' is missing the following properties from type 'ScaledSize': scale, fontScale
+
+[7m106[0m       mockedDimensions.get.mockReturnValue({ width: 1920, height: 1080 });
+[7m   [0m [91m                                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96mutils/__tests__/DeviceUtils.test.ts[0m:[93m113[0m:[93m44[0m - [91merror[0m[90m TS2345: [0mArgument of type '{ width: number; height: number; }' is not assignable to parameter of type 'ScaledSize'.
+  Type '{ width: number; height: number; }' is missing the following properties from type 'ScaledSize': scale, fontScale
+
+[7m113[0m       mockedDimensions.get.mockReturnValue({ width: 375, height: 812 });
+[7m   [0m [91m                                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96mutils/__tests__/DeviceUtils.test.ts[0m:[93m118[0m:[93m44[0m - [91merror[0m[90m TS2345: [0mArgument of type '{ width: number; height: number; }' is not assignable to parameter of type 'ScaledSize'.
+  Type '{ width: number; height: number; }' is missing the following properties from type 'ScaledSize': scale, fontScale
+
+[7m118[0m       mockedDimensions.get.mockReturnValue({ width: 768, height: 1024 });
+[7m   [0m [91m                                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96mutils/__tests__/DeviceUtils.test.ts[0m:[93m123[0m:[93m44[0m - [91merror[0m[90m TS2345: [0mArgument of type '{ width: number; height: number; }' is not assignable to parameter of type 'ScaledSize'.
+  Type '{ width: number; height: number; }' is missing the following properties from type 'ScaledSize': scale, fontScale
+
+[7m123[0m       mockedDimensions.get.mockReturnValue({ width: 1920, height: 1080 });
+[7m   [0m [91m                                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96mutils/__tests__/DeviceUtils.test.ts[0m:[93m130[0m:[93m44[0m - [91merror[0m[90m TS2345: [0mArgument of type '{ width: number; height: number; }' is not assignable to parameter of type 'ScaledSize'.
+  Type '{ width: number; height: number; }' is missing the following properties from type 'ScaledSize': scale, fontScale
+
+[7m130[0m       mockedDimensions.get.mockReturnValue({ width: 375, height: 812 });
+[7m   [0m [91m                                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96mutils/__tests__/DeviceUtils.test.ts[0m:[93m135[0m:[93m44[0m - [91merror[0m[90m TS2345: [0mArgument of type '{ width: number; height: number; }' is not assignable to parameter of type 'ScaledSize'.
+  Type '{ width: number; height: number; }' is missing the following properties from type 'ScaledSize': scale, fontScale
+
+[7m135[0m       mockedDimensions.get.mockReturnValue({ width: 768, height: 1024 });
+[7m   [0m [91m                                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96mutils/__tests__/DeviceUtils.test.ts[0m:[93m140[0m:[93m44[0m - [91merror[0m[90m TS2345: [0mArgument of type '{ width: number; height: number; }' is not assignable to parameter of type 'ScaledSize'.
+  Type '{ width: number; height: number; }' is missing the following properties from type 'ScaledSize': scale, fontScale
+
+[7m140[0m       mockedDimensions.get.mockReturnValue({ width: 1920, height: 1080 });
+[7m   [0m [91m                                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96mutils/__tests__/DeviceUtils.test.ts[0m:[93m147[0m:[93m44[0m - [91merror[0m[90m TS2345: [0mArgument of type '{ width: number; height: number; }' is not assignable to parameter of type 'ScaledSize'.
+  Type '{ width: number; height: number; }' is missing the following properties from type 'ScaledSize': scale, fontScale
+
+[7m147[0m       mockedDimensions.get.mockReturnValue({ width: 812, height: 375 });
+[7m   [0m [91m                                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96mutils/__tests__/DeviceUtils.test.ts[0m:[93m152[0m:[93m44[0m - [91merror[0m[90m TS2345: [0mArgument of type '{ width: number; height: number; }' is not assignable to parameter of type 'ScaledSize'.
+  Type '{ width: number; height: number; }' is missing the following properties from type 'ScaledSize': scale, fontScale
+
+[7m152[0m       mockedDimensions.get.mockReturnValue({ width: 375, height: 812 });
+[7m   [0m [91m                                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96mutils/__tests__/DeviceUtils.test.ts[0m:[93m157[0m:[93m44[0m - [91merror[0m[90m TS2345: [0mArgument of type '{ width: number; height: number; }' is not assignable to parameter of type 'ScaledSize'.
+  Type '{ width: number; height: number; }' is missing the following properties from type 'ScaledSize': scale, fontScale
+
+[7m157[0m       mockedDimensions.get.mockReturnValue({ width: 500, height: 500 });
+[7m   [0m [91m                                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96mutils/__tests__/DeviceUtils.test.ts[0m:[93m164[0m:[93m44[0m - [91merror[0m[90m TS2345: [0mArgument of type '{ width: number; height: number; }' is not assignable to parameter of type 'ScaledSize'.
+  Type '{ width: number; height: number; }' is missing the following properties from type 'ScaledSize': scale, fontScale
+
+[7m164[0m       mockedDimensions.get.mockReturnValue({ width: 375, height: 812 });
+[7m   [0m [91m                                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96mutils/__tests__/DeviceUtils.test.ts[0m:[93m169[0m:[93m44[0m - [91merror[0m[90m TS2345: [0mArgument of type '{ width: number; height: number; }' is not assignable to parameter of type 'ScaledSize'.
+  Type '{ width: number; height: number; }' is missing the following properties from type 'ScaledSize': scale, fontScale
+
+[7m169[0m       mockedDimensions.get.mockReturnValue({ width: 812, height: 375 });
+[7m   [0m [91m                                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96mutils/__tests__/DeviceUtils.test.ts[0m:[93m176[0m:[93m44[0m - [91merror[0m[90m TS2345: [0mArgument of type '{ width: number; height: number; }' is not assignable to parameter of type 'ScaledSize'.
+  Type '{ width: number; height: number; }' is missing the following properties from type 'ScaledSize': scale, fontScale
+
+[7m176[0m       mockedDimensions.get.mockReturnValue({ width: 375, height: 812 });
+[7m   [0m [91m                                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96mutils/__tests__/DeviceUtils.test.ts[0m:[93m183[0m:[93m44[0m - [91merror[0m[90m TS2345: [0mArgument of type '{ width: number; height: number; }' is not assignable to parameter of type 'ScaledSize'.
+  Type '{ width: number; height: number; }' is missing the following properties from type 'ScaledSize': scale, fontScale
+
+[7m183[0m       mockedDimensions.get.mockReturnValue({ width: 768, height: 1024 });
+[7m   [0m [91m                                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96mutils/__tests__/DeviceUtils.test.ts[0m:[93m190[0m:[93m44[0m - [91merror[0m[90m TS2345: [0mArgument of type '{ width: number; height: number; }' is not assignable to parameter of type 'ScaledSize'.
+  Type '{ width: number; height: number; }' is missing the following properties from type 'ScaledSize': scale, fontScale
+
+[7m190[0m       mockedDimensions.get.mockReturnValue({ width: 1920, height: 1080 });
+[7m   [0m [91m                                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96mutils/__tests__/DeviceUtils.test.ts[0m:[93m199[0m:[93m44[0m - [91merror[0m[90m TS2345: [0mArgument of type '{ width: number; height: number; }' is not assignable to parameter of type 'ScaledSize'.
+  Type '{ width: number; height: number; }' is missing the following properties from type 'ScaledSize': scale, fontScale
+
+[7m199[0m       mockedDimensions.get.mockReturnValue({ width: 375, height: 812 });
+[7m   [0m [91m                                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96mutils/__tests__/DeviceUtils.test.ts[0m:[93m204[0m:[93m44[0m - [91merror[0m[90m TS2345: [0mArgument of type '{ width: number; height: number; }' is not assignable to parameter of type 'ScaledSize'.
+  Type '{ width: number; height: number; }' is missing the following properties from type 'ScaledSize': scale, fontScale
+
+[7m204[0m       mockedDimensions.get.mockReturnValue({ width: 768, height: 1024 });
+[7m   [0m [91m                                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96mutils/__tests__/DeviceUtils.test.ts[0m:[93m209[0m:[93m44[0m - [91merror[0m[90m TS2345: [0mArgument of type '{ width: number; height: number; }' is not assignable to parameter of type 'ScaledSize'.
+  Type '{ width: number; height: number; }' is missing the following properties from type 'ScaledSize': scale, fontScale
+
+[7m209[0m       mockedDimensions.get.mockReturnValue({ width: 1920, height: 1080 });
+[7m   [0m [91m                                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96mutils/__tests__/ResponsiveStyles.test.ts[0m:[93m37[0m:[93m5[0m - [91merror[0m[90m TS2353: [0mObject literal may only specify known properties, and 'safeAreaInsets' does not exist in type 'ResponsiveConfig'.
+
+[7m37[0m     safeAreaInsets: { top: 0, bottom: 0, left: 0, right: 0 },
+[7m  [0m [91m    ~~~~~~~~~~~~~~[0m
+
+[96mutils/debug/debugLauncher.ts[0m:[93m11[0m:[93m10[0m - [91merror[0m[90m TS2614: [0mModule '"./DebugOverlay"' has no exported member 'ensureGlobalPush'. Did you mean to use 'import ensureGlobalPush from "./DebugOverlay"' instead?
+
+[7m11[0m import { ensureGlobalPush } from "./DebugOverlay";
+[7m  [0m [91m         ~~~~~~~~~~~~~~~~[0m
+
+[96mutils/debug/DebugOverlay.tsx[0m:[93m54[0m:[93m27[0m - [91merror[0m[90m TS7017: [0mElement implicitly has an 'any' type because type 'typeof globalThis' has no index signature.
+
+[7m54[0m         delete globalThis.__pushAppDebug;
+[7m  [0m [91m                          ~~~~~~~~~~~~~~[0m
+
+[96mutils/debug/PositionableFAB.tsx[0m:[93m153[0m:[93m29[0m - [91merror[0m[90m TS2351: [0mThis expression is not constructable.
+  Type '{ addListener: (listener: (event: HWEvent) => void) => EventSubscription | undefined; }' has no construct signatures.
+
+[7m153[0m       const tvHandler = new TVEventHandler();
+[7m   [0m [91m                            ~~~~~~~~~~~~~~[0m
+
+[96mutils/debug/PositionableFAB.tsx[0m:[93m154[0m:[93m31[0m - [91merror[0m[90m TS7006: [0mParameter '_cmp' implicitly has an 'any' type.
+
+[7m154[0m       tvHandler.enable(null, (_cmp, evt) => {
+[7m   [0m [91m                              ~~~~[0m
+
+[96mutils/debug/PositionableFAB.tsx[0m:[93m154[0m:[93m37[0m - [91merror[0m[90m TS7006: [0mParameter 'evt' implicitly has an 'any' type.
+
+[7m154[0m       tvHandler.enable(null, (_cmp, evt) => {
+[7m   [0m [91m                                    ~~~[0m
+
+[96mutils/debug/PositionableFAB.tsx[0m:[93m195[0m:[93m5[0m - [91merror[0m[90m TS2322: [0mType 'string' is not assignable to type 'DimensionValue | undefined'.
+
+[7m195[0m     left: presets[preset].left,
+[7m   [0m [91m    ~~~~[0m
+
+  [96mnode_modules/react-native/Libraries/StyleSheet/StyleSheetTypes.d.ts[0m:[93m83[0m:[93m3[0m
+    [7m83[0m   left?: DimensionValue | undefined;
+    [7m  [0m [96m  ~~~~[0m
+    The expected type comes from property 'left' which is declared here on type 'ViewStyle'
+
+[96mutils/debug/PositionableFAB.tsx[0m:[93m196[0m:[93m5[0m - [91merror[0m[90m TS2322: [0mType 'string' is not assignable to type 'DimensionValue | undefined'.
+
+[7m196[0m     top: presets[preset].top,
+[7m   [0m [91m    ~~~[0m
+
+  [96mnode_modules/react-native/Libraries/StyleSheet/StyleSheetTypes.d.ts[0m:[93m110[0m:[93m3[0m
+    [7m110[0m   top?: DimensionValue | undefined;
+    [7m   [0m [96m  ~~~[0m
+    The expected type comes from property 'top' which is declared here on type 'ViewStyle'
+
+[96mutils/debug/PositionableFAB.tsx[0m:[93m208[0m:[93m9[0m - [91merror[0m[90m TS2769: [0mNo overload matches this call.
+  Overload 1 of 2, '(props: TouchableOpacityProps): TouchableOpacity', gave the following error.
+    Type '{ children: Element; onPress: () => void; onPressIn: () => void; onPressOut: () => void; activeOpacity: number; focusable: boolean; accessibilityRole: "button"; accessibilityLabel: string; ... 14 more ...; onMoveShouldSetResponderCapture?: ((event: GestureResponderEvent) => boolean) | undefined; }' is not assignable to type 'IntrinsicAttributes & IntrinsicClassAttributes<TouchableOpacity> & Readonly<TouchableOpacityProps>'.
+      Property 'focusable' does not exist on type 'IntrinsicAttributes & IntrinsicClassAttributes<TouchableOpacity> & Readonly<TouchableOpacityProps>'.
+  Overload 2 of 2, '(props: TouchableOpacityProps, context: any): TouchableOpacity', gave the following error.
+    Type '{ children: Element; onPress: () => void; onPressIn: () => void; onPressOut: () => void; activeOpacity: number; focusable: boolean; accessibilityRole: "button"; accessibilityLabel: string; ... 14 more ...; onMoveShouldSetResponderCapture?: ((event: GestureResponderEvent) => boolean) | undefined; }' is not assignable to type 'IntrinsicAttributes & IntrinsicClassAttributes<TouchableOpacity> & Readonly<TouchableOpacityProps>'.
+      Property 'focusable' does not exist on type 'IntrinsicAttributes & IntrinsicClassAttributes<TouchableOpacity> & Readonly<TouchableOpacityProps>'.
+
+[7m208[0m         focusable={true}
+[7m   [0m [91m        ~~~~~~~~~[0m
+
+
+[96mutils/logger_augment.ts[0m:[93m224[0m:[93m61[0m - [91merror[0m[90m TS2556: [0mA spread argument must either have a tuple type or be passed to a rest parameter.
+
+[7m224[0m             augmentEmit(levelName.toUpperCase(), undefined, ...args);
+[7m   [0m [91m                                                            ~~~~~~~[0m
+
+[96mutils/logger_augment.ts[0m:[93m230[0m:[93m31[0m - [91merror[0m[90m TS2683: [0m'this' implicitly has type 'any' because it does not have a type annotation.
+
+[7m230[0m           return origFn.apply(this, args);
+[7m   [0m [91m                              ~~~~[0m
+
+  [96mutils/logger_augment.ts[0m:[93m214[0m:[93m30[0m
+    [7m214[0m       const wrapped: AnyFn = function (...args: any[]) {
+    [7m   [0m [96m                             ~~~~~~~~[0m
+    An outer value of 'this' is shadowed by this container.
+
+[96mutils/playbackOptions.ts[0m:[93m6[0m:[93m10[0m - [91merror[0m[90m TS2305: [0mModule '"@/utils/debug/flags"' has no exported member 'setFileDebugConfig'.
+
+[7m6[0m import { setFileDebugConfig } from "@/utils/debug/flags";
+[7m [0m [91m         ~~~~~~~~~~~~~~~~~~[0m
+
+[96mutils/playbackOptions.ts[0m:[93m7[0m:[93m26[0m - [91merror[0m[90m TS2307: [0mCannot find module '@/utils/debug/logger' or its corresponding type declarations.
+
+[7m7[0m import { debugLog } from "@/utils/debug/logger";
+[7m [0m [91m                         ~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96mutils/playbackOptions_bak.ts[0m:[93m55[0m:[93m11[0m - [91merror[0m[90m TS2353: [0mObject literal may only specify known properties, and 'id' does not exist in type 'Favorite'.
+
+[7m55[0m           id,
+[7m  [0m [91m          ~~[0m
+
+[96mutils/playbackOptions_bak.ts[0m:[93m91[0m:[93m13[0m - [91merror[0m[90m TS2353: [0mObject literal may only specify known properties, and 'id' does not exist in type 'Favorite'.
+
+[7m91[0m             id,
+[7m  [0m [91m            ~~[0m
+
+
+Found 63 errors in 14 files.
+
+Errors  Files
+     1  app/favorites.tsx[90m:70[0m
+     1  app/search.tsx[90m:24[0m
+     1  components/DebugOverlayToggle.tsx[90m:5[0m
+     7  stores/favoritesStore.ts[90m:52[0m
+     2  stores/playerStore.ts[90m:252[0m
+     3  stores/settingsStore.ts[90m:60[0m
+    33  utils/__tests__/DeviceUtils.test.ts[90m:19[0m
+     1  utils/__tests__/ResponsiveStyles.test.ts[90m:37[0m
+     1  utils/debug/debugLauncher.ts[90m:11[0m
+     1  utils/debug/DebugOverlay.tsx[90m:54[0m
+     6  utils/debug/PositionableFAB.tsx[90m:153[0m
+     2  utils/logger_augment.ts[90m:224[0m
+     2  utils/playbackOptions.ts[90m:6[0m
+     2  utils/playbackOptions_bak.ts[90m:55[0m
+error Command failed with exit code 2.
+info Visit https://yarnpkg.com/en/docs/cli/run for documentation about this command.
