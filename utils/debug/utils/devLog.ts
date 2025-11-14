@@ -1,7 +1,6 @@
 // src/utils/devLog.ts
 import Logger from '../../Logger';
 
-
 const DEFAULT_TAG = "DevLog";
 const shortLogger = Logger?.withTag?.(DEFAULT_TAG) ?? Logger;
 
@@ -42,11 +41,11 @@ function hashStringToInt(s: string): number {
  * - maxCode: shortCode 上限 (預設 99999) -> shortCode ∈ [1, maxCode]
  * 回傳 { fileLine, shortCode } 方便進一步使用或測試
  *
- * 注意：輸出僅在 global.DEBUG_FLAGS.line_trace 為真時顯示
+ * 注意：輸出僅在 process.env.DEBUG_FLAGS === 'true' 時顯示
  */
 export function logLineShort(tag = DEFAULT_TAG, skipDepth = 2, maxCode = 99999) {
   try {
-    const enabled = (global as any).DEBUG_FLAGS?.line_trace ?? false;
+    const enabled = process.env.DEBUG_FLAGS === 'true';
     if (!enabled) return { fileLine: "disabled", shortCode: 0 };
 
     const caller = getCallerFileLine(skipDepth);
@@ -62,7 +61,7 @@ export function logLineShort(tag = DEFAULT_TAG, skipDepth = 2, maxCode = 99999) 
     // 三路輸出：console + debug + Logger
     try {
       console.log(out);
-      console.debug && console.debug(out);
+      if (console.debug) console.debug(out);
     } catch {
       /* ignore console errors */
     }
@@ -78,3 +77,7 @@ export function logLineShort(tag = DEFAULT_TAG, skipDepth = 2, maxCode = 99999) 
     return { fileLine: "unknown", shortCode: 0 };
   }
 }
+
+export default {
+  logLineShort,
+};

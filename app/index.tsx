@@ -1,23 +1,7 @@
 /* 放在檔案最上方，任何 import 之前*/
-if (__DEV__) {
-  (global as any).DEBUG_FLAGS = (global as any).DEBUG_FLAGS ?? {};
-  (global as any).DEBUG_FLAGS.line_trace = true;
-
-  try {
-    // 調整為你的 devLog 實際相對路徑（範例：OrionTV/utils/debug/utils/devLog.ts）
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    (global as any).__devLog = require('../utils/debug/utils/devLog').logLineShort;
-  } catch {}
-}
-
-if (__DEV__ || process.env.DEBUG_OVERLAY === 'true') {
-  try {
-    // 你提供的新路徑：OrionTV/utils/debug/DebugOverlay.tsx
-    // 從 src/App.tsx 相對路徑為 ../utils/debug/DebugOverlay
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    require('../utils/debug/DebugOverlay');
-  } catch {}
-}
+process.env.DEBUG_FLAGS = 'true'; // 或 'false'
+// index.tsx（entry 最上方）——唯一要做的事：設定為字串 'true' 或 'false'
+process.env.DEBUG_OVERLAY = 'true'; // 或 'false'
 
 import '../utils/logger_augment';
 import React, { useEffect, useCallback, useRef, useState } from "react";
