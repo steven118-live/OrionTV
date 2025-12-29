@@ -44,6 +44,7 @@ const VideoCard = forwardRef<View, VideoCardProps>(
       onRecordDeleted,
       api,
       playTime = 0,
+      totalEpisodes,
     }: VideoCardProps,
     ref
   ) => {
@@ -167,6 +168,16 @@ const VideoCard = forwardRef<View, VideoCardProps>(
         >
           <View style={styles.card}>
             <Image source={{ uri: api.getImageProxyUrl(poster) }} style={styles.poster} />
+
+            {/* 新增集數標籤 */}
+            {episodeIndex !== undefined && totalEpisodes !== undefined && totalEpisodes > 1 && (
+              <View style={styles.episodeBadge}>
+                <Text style={styles.badgeText}>
+                  {episodeIndex}/{totalEpisodes}
+                </Text>
+              </View>
+            )}
+
             {isFocused && (
               <View style={styles.overlay}>
                 {isContinueWatching && (
@@ -198,16 +209,18 @@ const VideoCard = forwardRef<View, VideoCardProps>(
             )}
             {sourceName && (
               <View style={styles.sourceNameBadge}>
-                <Text style={styles.badgeText}>{sourceName}</Text>
+                <ThemedText type="defaultSemiBold" style={styles.badgeText}>
+                  {sourceName}
+                </ThemedText>
               </View>
             )}
           </View>
           <View style={styles.infoContainer}>
-            <ThemedText numberOfLines={1}>{title}</ThemedText>
+            <ThemedText numberOfLines={1} style={{ color: '#FFFFFF', backgroundColor: 'transparent' }}>{title}</ThemedText>
             {isContinueWatching && (
               <View style={styles.infoRow}>
-                <ThemedText style={styles.continueLabel}>
-                  第{episodeIndex}集 已观看 {Math.round((progress || 0) * 100)}%
+                <ThemedText style={{ color: '#FFFFFF', backgroundColor: 'transparent' }}>
+                  第{episodeIndex}集 已觀看 {Math.round((progress || 0) * 100)}%
                 </ThemedText>
               </View>
             )}
@@ -359,5 +372,16 @@ const styles = StyleSheet.create({
   continueLabel: {
     color: Colors.dark.primary,
     fontSize: 12,
+  },
+  episodeBadge: {
+    position: "absolute",
+    top: "35%",
+    left: "50%",
+    transform: [{ translateX: -24 }, { translateY: -10 }],
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    zIndex: 10,
   },
 });

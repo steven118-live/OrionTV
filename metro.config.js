@@ -37,4 +37,15 @@ config.resolver.nodeModulesPaths = [
 ];
 config.resolver.disableHierarchicalLookup = true;
 
+// === Added alias mapping for ThemedText override (non-invasive) ===
+// This maps imports using the alias '@/components/ThemedText' to the
+// override implementation at components/overrides/ThemedText.tsx.
+// It does not modify or delete the original components/ThemedText.tsx file.
+// To revert, remove the entry below and restart Metro with --reset-cache.
+config.resolver = config.resolver || {};
+config.resolver.extraNodeModules = {
+  ...(config.resolver.extraNodeModules || {}),
+  "@/components/ThemedText": path.resolve(__dirname, "components/overrides/ThemedText.tsx"),
+};
+
 module.exports = config;

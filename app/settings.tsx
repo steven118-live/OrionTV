@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { View, StyleSheet, Alert, Platform } from "react-native";
+import { View, StyleSheet, Alert, Platform, Switch, } from "react-native";
 import { useTVEventHandler } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ThemedText } from "@/components/ThemedText";
@@ -21,6 +21,8 @@ import ResponsiveNavigation from "@/components/navigation/ResponsiveNavigation";
 import ResponsiveHeader from "@/components/navigation/ResponsiveHeader";
 import { DeviceUtils } from "@/utils/DeviceUtils";
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import { useUIStore, AIMode } from "@/stores/uiStore";
+import { UIHeaderAutoHideSection } from "@/components/settings/UIHeaderAutoHideSection";
 
 type SectionItem = {
   component: React.ReactElement;
@@ -53,6 +55,7 @@ export default function SettingsScreen() {
   const saveButtonRef = useRef<any>(null);
   const apiSectionRef = useRef<any>(null);
   const liveStreamSectionRef = useRef<any>(null);
+  const { enableHeaderAutoHide, aiMode, setAIMode } = useUIStore();
 
   useEffect(() => {
     loadSettings();
@@ -79,6 +82,7 @@ export default function SettingsScreen() {
     }
   };
 
+
   const handleSave = async () => {
     setIsLoading(true);
     try {
@@ -99,72 +103,63 @@ export default function SettingsScreen() {
     setHasChanges(true);
   };
 
-  // const sections = [
-  //   // 远程输入配置 - 仅在非手机端显示
-  //   deviceType !== "mobile" && {
-  //     component: (
-  //       <RemoteInputSection
-  //         onChanged={markAsChanged}
-  //         onFocus={() => {
-  //           setCurrentFocusIndex(0);
-  //           setCurrentSection("remote");
-  //         }}
-  //       />
-  //     ),
-  //     key: "remote",
-  //   },
-  //   {
-  //     component: (
-  //       <APIConfigSection
-  //         ref={apiSectionRef}
-  //         onChanged={markAsChanged}
-  //         hideDescription={deviceType === "mobile"}
-  //         onFocus={() => {
-  //           setCurrentFocusIndex(1);
-  //           setCurrentSection("api");
-  //         }}
-  //       />
-  //     ),
-  //     key: "api",
-  //   },
-  //   // 直播源配置 - 仅在非手机端显示
-  //   deviceType !== "mobile" && {
-  //     component: (
-  //       <LiveStreamSection
-  //         ref={liveStreamSectionRef}
-  //         onChanged={markAsChanged}
-  //         onFocus={() => {
-  //           setCurrentFocusIndex(2);
-  //           setCurrentSection("livestream");
-  //         }}
-  //       />
-  //     ),
-  //     key: "livestream",
-  //   },
-  //   // {
-  //   //   component: (
-  //   //     <VideoSourceSection
-  //   //       onChanged={markAsChanged}
-  //   //       onFocus={() => {
-  //   //         setCurrentFocusIndex(3);
-  //   //         setCurrentSection("videoSource");
-  //   //       }}
-  //   //     />
-  //   //   ),
-  //   //   key: "videoSource",
-  //   // },
-  //   Platform.OS === "android" && {
-  //     component: <UpdateSection />,
-  //     key: "update",
-  //   },
-  // ].filter(Boolean);
   const rawSections = [
+  // 第一項：自動隱藏頂部欄（跟其他項目共用風格）
+    {
+      component: (
+        <UIHeaderAutoHideSection
+          onChanged={markAsChanged}
+          onFocus={() => {
+            setCurrentFocusIndex(0);
+            setCurrentSection("ui-header-hide");  // 隨便取個名字
+          }}
+        />
+      ),
+      key: "ui-header-auto-hide",
+    },
+
+    // 2. 性能模式選擇（即時生效）
+    {
+      component: (
+        <View style={{ marginBottom: spacing * 2 }}>
+          <ThemedText style={{ color: "#fff", fontSize: 18, marginBottom: spacing }}>
+            性能模式（即時生效）
+          </ThemedText>
+          <View style={{ flexDirection: "row", gap: spacing, flexWrap: "wrap" }}>
+            {[
+              { mode: AIMode.LowMemory, label: "省電模式", color: "#888" },
+              { mode: AIMode.Balanced, label: "均衡模式", color: "#4CAF50" },
+              { mode: AIMode.HighPerformance, label: "極致模式", color: "#00BCD4" },
+            ].map(({ mode, label, color }) => (
+              <StyledButton
+                key={mode}
+                text={label}
+                variant={aiMode === mode ? "primary" : "ghost"}
+                style={{
+                  backgroundColor: aiMode === mode ? color : undefined,
+                  minWidth: 120,
+                }}
+                onPress={() => setAIMode(mode)}
+              />
+            ))}
+          </View>
+          <ThemedText style={{ color: "#aaa", fontSize: 12, marginTop: spacing / 2 }}>
+            {aiMode === AIMode.LowMemory && "適合低配設備，極省記憶體"}
+            {aiMode === AIMode.Balanced && "推薦設定，流暢又省電"}
+            {aiMode === AIMode.HighPerformance && "適合高階電視，極致絲滑"}
+          </ThemedText>
+        </View>
+      ),
+      key: "performance-mode",
+    },
+
+    // 3. 其他原有項目
     deviceType !== "mobile" && {
       component: (
         <RemoteInputSection
           onChanged={markAsChanged}
           onFocus={() => {
-            setCurrentFocusIndex(0);
+            setCurrentFocusIndex(2);
             setCurrentSection("remote");
           }}
         />
@@ -178,7 +173,7 @@ export default function SettingsScreen() {
           onChanged={markAsChanged}
           hideDescription={deviceType === "mobile"}
           onFocus={() => {
-            setCurrentFocusIndex(1);
+            setCurrentFocusIndex(3);
             setCurrentSection("api");
           }}
         />
@@ -191,7 +186,7 @@ export default function SettingsScreen() {
           ref={liveStreamSectionRef}
           onChanged={markAsChanged}
           onFocus={() => {
-            setCurrentFocusIndex(2);
+            setCurrentFocusIndex(4);
             setCurrentSection("livestream");
           }}
         />

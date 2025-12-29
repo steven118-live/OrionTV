@@ -1,3 +1,4 @@
+// stores/homeStore.ts
 import { create } from "zustand";
 import { api, SearchResult, PlayRecord } from "@/services/api";
 import { PlayRecordManager } from "@/services/storage";
@@ -29,28 +30,9 @@ export interface Category {
 const initialCategories: Category[] = [
   { title: "最近播放", type: "record" },
   { title: "热门剧集", type: "tv", tag: "热门" },
-  { title: "电视剧", type: "tv", tags: ["国产剧", "美剧", "英剧", "韩剧", "日剧", "港剧", "日本动画", "动画"] },
-  {
-    title: "电影",
-    type: "movie",
-    tags: [
-      "热门",
-      "最新",
-      "经典",
-      "豆瓣高分",
-      "冷门佳片",
-      "华语",
-      "欧美",
-      "韩国",
-      "日本",
-      "动作",
-      "喜剧",
-      "爱情",
-      "科幻",
-      "悬疑",
-      "恐怖",
-    ],
-  },
+  { title: "电视剧", type: "tv", tags: ["国产剧", "美剧", "英剧", "韩剧", "日剧", "港剧", "纪录片"] },
+  { title: "动漫", type: "tv", tags: ["日本动画", "国产动画", "欧美动画"] },
+  { title: "电影", type: "movie", tags: ["热门", "最新", "经典", "豆瓣高分", "冷门佳片", "华语", "欧美", "韩国", "日本", "动作", "喜剧", "爱情", "科幻", "悬疑", "恐怖"] },
   { title: "综艺", type: "tv", tag: "综艺" },
   { title: "豆瓣 Top250", type: "movie", tag: "top250" },
 ];
@@ -63,9 +45,9 @@ interface CacheItem {
   hasMore: boolean;
 }
 
-const CACHE_EXPIRE_TIME = 5 * 60 * 1000; // 5分钟过期
-const MAX_CACHE_SIZE = 10; // 最大缓存容量
-const MAX_ITEMS_PER_CACHE = 40; // 每个缓存最大条目数
+const CACHE_EXPIRE_TIME = 5 * 60 * 1000; // 5分鐘
+const MAX_CACHE_SIZE = 12;
+const MAX_ITEMS_PER_CACHE = 60;
 
 const getCacheKey = (category: Category) => {
   return `${category.type || 'unknown'}-${category.title}-${category.tag || ''}`;
@@ -89,6 +71,7 @@ interface HomeState {
   selectCategory: (category: Category) => void;
   refreshPlayRecords: () => Promise<void>;
   clearError: () => void;
+  initEpisodeSelection: () => void;
 }
 
 // 内存缓存，应用生命周期内有效
@@ -96,13 +79,18 @@ const dataCache = new Map<string, CacheItem>();
 
 const useHomeStore = create<HomeState>((set, get) => ({
   categories: initialCategories,
-  selectedCategory: initialCategories[0],
+  // ⚡ 預設選中熱門劇集，而不是第一個最近播放
+  selectedCategory: initialCategories.find(c => c.title === "热门剧集") || initialCategories[0],
   contentData: [],
   loading: true,
   loadingMore: false,
   pageStart: 0,
   hasMore: true,
   error: null,
+
+  initEpisodeSelection: () => {
+    // 播放頁全局初始化
+  },
 
   fetchInitialData: async () => {
     const { apiBaseUrl } = useSettingsStore.getState();
@@ -132,6 +120,7 @@ const useHomeStore = create<HomeState>((set, get) => ({
     }
 
     set({ loading: true, contentData: [], pageStart: 0, hasMore: true, error: null });
+    await get().initEpisodeSelection();
     await get().loadMoreData();
   },
 

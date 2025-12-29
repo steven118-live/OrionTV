@@ -1,36 +1,47 @@
+import { BUILD_ENV } from './BuildEnv';
+
 export const UPDATE_CONFIG = {
-  // 自动检查更新
+  // 是否自動檢查更新
   AUTO_CHECK: true,
 
-  // 检查更新间隔（毫秒）
-  CHECK_INTERVAL: 12 * 60 * 60 * 1000, // 12小时
+  // 檢查間隔：12 小時
+  CHECK_INTERVAL: 12 * 60 * 60 * 1000,
 
-  // GitHub相关URL
-  GITHUB_RAW_URL:
+  // 官方 OrionTV 的版本來源
+  ORIONTV_ORG_GITHUB_RAW_URL:
     `https://ghfast.top/https://raw.githubusercontent.com/orion-lib/OrionTV/refs/heads/master/package.json?t=${Date.now()}`,
 
-  // 获取平台特定的下载URL
+  // 當前 repo 的版本來源
+  GITHUB_RAW_URL:
+    `https://raw.githubusercontent.com/${BUILD_ENV.USER_NAME}/${BUILD_ENV.REPO_NAME}/${BUILD_ENV.BRANCH_NAME}/package.json`,
+
+  // 生成下載 URL
   getDownloadUrl(version: string): string {
-    return `https://ghfast.top/https://github.com/orion-lib/OrionTV/releases/download/v${version}/orionTV.${version}.apk`;
+    const safeBranch = BUILD_ENV.BRANCH_NAME.replace(/[^a-zA-Z0-9_-]/g, "-");
+    const suffix =
+      BUILD_ENV.BRANCH_NAME === "main" || BUILD_ENV.BRANCH_NAME === "master"
+        ? ""
+        : `-${safeBranch}`;
+    return `https://github.com/${BUILD_ENV.USER_NAME}/${BUILD_ENV.REPO_NAME}/releases/download/v${version}${suffix}/orionTV.${version}${suffix}.apk`;
   },
 
-  // 是否显示更新日志
+  // 是否顯示 Release Notes
   SHOW_RELEASE_NOTES: true,
 
-  // 是否允许跳过版本
+  // 是否允許跳過版本
   ALLOW_SKIP_VERSION: true,
 
-  // 下载超时时间（毫秒）
-  DOWNLOAD_TIMEOUT: 10 * 60 * 1000, // 10分钟
+  // 下載逾時：10 分鐘
+  DOWNLOAD_TIMEOUT: 10 * 60 * 1000,
 
-  // 是否在WIFI下自动下载
+  // 僅 WiFi 自動下載
   AUTO_DOWNLOAD_ON_WIFI: false,
 
-  // 更新通知设置
+  // 通知設定
   NOTIFICATION: {
     ENABLED: true,
     TITLE: "OrionTV 更新",
-    DOWNLOADING_TEXT: "正在下载新版本...",
-    DOWNLOAD_COMPLETE_TEXT: "下载完成，点击安装",
+    DOWNLOADING_TEXT: "正在下載新版本...",
+    DOWNLOAD_COMPLETE_TEXT: "下載完成，點擊安裝",
   },
 };

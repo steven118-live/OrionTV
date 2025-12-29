@@ -16,6 +16,7 @@ const SPEED_OPTIONS: SpeedOption[] = [
   { rate: 1.5, label: "1.5x" },
   { rate: 1.75, label: "1.75x" },
   { rate: 2.0, label: "2x" },
+  { rate: 3.0, label: "3x" },
 ];
 
 export const SpeedSelectionModal: React.FC = () => {

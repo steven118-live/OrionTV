@@ -45,6 +45,7 @@ const VideoCardTablet = forwardRef<View, VideoCardTabletProps>(
       onRecordDeleted,
       api,
       playTime = 0,
+      totalEpisodes,
     }: VideoCardTabletProps,
     ref
   ) => {
@@ -151,55 +152,56 @@ const VideoCardTablet = forwardRef<View, VideoCardTabletProps>(
         >
           <View style={[styles.card, isPressed && styles.cardPressed]}>
             <Image source={{ uri: api.getImageProxyUrl(poster) }} style={styles.poster} />
-            
-            {/* 悬停效果遮罩 */}
+
+            {episodeIndex !== undefined && totalEpisodes !== undefined && totalEpisodes > 1 && (
+              <View style={styles.episodeBadge}>
+                <ThemedText style={styles.badgeText}>{episodeIndex}/{totalEpisodes}</ThemedText>
+              </View>
+            )}
+
             {isPressed && (
               <View style={styles.pressOverlay}>
                 {isContinueWatching && (
                   <View style={styles.continueWatchingBadge}>
                     <Play size={16} color="#ffffff" fill="#ffffff" />
-                    <Text style={styles.continueWatchingText}>继续观看</Text>
+                    <ThemedText style={styles.continueWatchingText}>继续观看</ThemedText>
                   </View>
                 )}
               </View>
             )}
 
-            {/* 进度条 */}
             {isContinueWatching && (
               <View style={styles.progressContainer}>
                 <View style={[styles.progressBar, { width: `${(progress || 0) * 100}%` }]} />
               </View>
             )}
 
-            {/* 评分 */}
             {rate && (
               <View style={styles.ratingContainer}>
                 <Star size={12} color="#FFD700" fill="#FFD700" />
-                <Text style={styles.ratingText}>{rate}</Text>
+                <ThemedText style={styles.ratingText}>{rate}</ThemedText>
               </View>
             )}
 
-            {/* 年份 */}
             {year && (
               <View style={styles.yearBadge}>
-                <Text style={styles.badgeText}>{year}</Text>
+                <ThemedText style={styles.badgeText}>{year}</ThemedText>
               </View>
             )}
 
-            {/* 来源 */}
             {sourceName && (
               <View style={styles.sourceNameBadge}>
-                <Text style={styles.badgeText}>{sourceName}</Text>
+                <ThemedText style={styles.badgeText}>{sourceName}</ThemedText>
               </View>
             )}
           </View>
 
           <View style={styles.infoContainer}>
-            <ThemedText numberOfLines={2} style={styles.title}>{title}</ThemedText>
+            <ThemedText numberOfLines={2} style={{ color: '#FFFFFF', backgroundColor: 'transparent' }}>{title}</ThemedText>
             {isContinueWatching && (
               <View style={styles.infoRow}>
-                <ThemedText style={styles.continueLabel} numberOfLines={1}>
-                  第{episodeIndex! + 1}集 已观看 {Math.round((progress || 0) * 100)}%
+                <ThemedText style={{ color: '#FFFFFF', backgroundColor: 'transparent' }} numberOfLines={1}>
+                  第{episodeIndex! + 1}集 已觀看 {Math.round((progress || 0) * 100)}%
                 </ThemedText>
               </View>
             )}
@@ -330,6 +332,17 @@ const createTabletStyles = (cardWidth: number, cardHeight: number, spacing: numb
     continueLabel: {
       color: Colors.dark.primary,
       fontSize: 12,
+    },
+    episodeBadge: {
+      position: "absolute",
+      top: "35%",
+      left: "50%",
+      transform: [{ translateX: -24 }, { translateY: -10 }],
+      backgroundColor: "rgba(0, 0, 0, 0.7)",
+      borderRadius: 6,
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      zIndex: 10,
     },
   });
 };

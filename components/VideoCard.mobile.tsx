@@ -45,6 +45,7 @@ const VideoCardMobile = forwardRef<View, VideoCardMobileProps>(
       onRecordDeleted,
       api,
       playTime = 0,
+      totalEpisodes,
     }: VideoCardMobileProps,
     ref
   ) => {
@@ -123,50 +124,51 @@ const VideoCardMobile = forwardRef<View, VideoCardMobileProps>(
         >
           <View style={styles.card}>
             <Image source={{ uri: api.getImageProxyUrl(poster) }} style={styles.poster} />
-            
-            {/* 进度条 */}
+
+            {episodeIndex !== undefined && totalEpisodes !== undefined && totalEpisodes > 1 && (
+              <View style={styles.episodeBadge}>
+                <ThemedText style={styles.badgeText}>{episodeIndex}/{totalEpisodes}</ThemedText>
+              </View>
+            )}
+
             {isContinueWatching && (
               <View style={styles.progressContainer}>
                 <View style={[styles.progressBar, { width: `${(progress || 0) * 100}%` }]} />
               </View>
             )}
 
-            {/* 继续观看标识 */}
             {isContinueWatching && (
               <View style={styles.continueWatchingBadge}>
                 <Play size={12} color="#ffffff" fill="#ffffff" />
-                <Text style={styles.continueWatchingText}>继续</Text>
+                <ThemedText style={styles.continueWatchingText}>继续</ThemedText>
               </View>
             )}
 
-            {/* 评分 */}
             {rate && (
               <View style={styles.ratingContainer}>
                 <Star size={10} color="#FFD700" fill="#FFD700" />
-                <Text style={styles.ratingText}>{rate}</Text>
+                <ThemedText style={styles.ratingText}>{rate}</ThemedText>
               </View>
             )}
 
-            {/* 年份 */}
             {year && (
               <View style={styles.yearBadge}>
-                <Text style={styles.badgeText}>{year}</Text>
+                <ThemedText style={styles.badgeText}>{year}</ThemedText>
               </View>
             )}
 
-            {/* 来源 */}
             {sourceName && (
               <View style={styles.sourceNameBadge}>
-                <Text style={styles.badgeText}>{sourceName}</Text>
+                <ThemedText style={styles.badgeText}>{sourceName}</ThemedText>
               </View>
             )}
           </View>
 
           <View style={styles.infoContainer}>
-            <ThemedText numberOfLines={2} style={styles.title}>{title}</ThemedText>
+            <ThemedText numberOfLines={2} style={{ color: '#FFFFFF', backgroundColor: 'transparent' }}>{title}</ThemedText>
             {isContinueWatching && (
-              <ThemedText style={styles.continueLabel} numberOfLines={1}>
-                第{episodeIndex! + 1}集 {Math.round((progress || 0) * 100)}%
+              <ThemedText style={{ color: '#FFFFFF', backgroundColor: 'transparent' }} numberOfLines={1}>
+                第{episodeIndex!}集 {Math.round((progress || 0) * 100)}%
               </ThemedText>
             )}
           </View>
@@ -281,6 +283,17 @@ const createMobileStyles = (cardWidth: number, cardHeight: number, spacing: numb
     continueLabel: {
       color: Colors.dark.primary,
       fontSize: 11,
+    },
+    episodeBadge: {
+      position: "absolute",
+      top: "35%",
+      left: "50%",
+      transform: [{ translateX: -24 }, { translateY: -10 }],
+      backgroundColor: "rgba(0, 0, 0, 0.7)",
+      borderRadius: 6,
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      zIndex: 10,
     },
   });
 };

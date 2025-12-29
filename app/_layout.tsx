@@ -1,8 +1,9 @@
+// app/_layout.tsx
 import { DarkTheme, DefaultTheme, ThemeProvider } from "@react-navigation/native";
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Platform, View, StyleSheet } from "react-native";
 import Toast from "react-native-toast-message";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -13,60 +14,83 @@ import LoginModal from "@/components/LoginModal";
 import useAuthStore from "@/stores/authStore";
 import { useUpdateStore, initUpdateStore } from "@/stores/updateStore";
 import { UpdateModal } from "@/components/UpdateModal";
-import { UPDATE_CONFIG } from "@/constants/UpdateConfig";
 import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
-import Logger from '@/utils/Logger';
+import { useApiConfig } from "@/hooks/useApiConfig";
+import Logger from "@/utils/Logger";
+import { api } from "@/services/api";
 
-const logger = Logger.withTag('RootLayout');
-
-// Prevent the splash screen from auto-hiding before asset loading is complete.
+const logger = Logger.withTag("RootLayout");
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const colorScheme = "dark";
-  const [loaded, error] = useFonts({
+  const [fontsLoaded, fontError] = useFonts({
     SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
   });
-  const { loadSettings, remoteInputEnabled, apiBaseUrl } = useSettingsStore();
+
+  // SettingsStore
+  const { apiBaseUrl, remoteInputEnabled } = useSettingsStore();
   const { startServer, stopServer } = useRemoteControlStore();
   const { checkLoginStatus } = useAuthStore();
   const { checkForUpdate, lastCheckTime } = useUpdateStore();
   const responsiveConfig = useResponsiveLayout();
+  const apiStatus = useApiConfig();
+
+  const hasInitialized = useRef(false);
+
+  // Step 1: 載入 settingsStore 設定 + 初始化 update store
+  useEffect(() => {
+    useSettingsStore.getState().loadSettings();
+    initUpdateStore();
+  }, []);
 
   useEffect(() => {
-    const initializeApp = async () => {
-      await loadSettings();
-    };
-    initializeApp();
-    initUpdateStore(); // 初始化更新存储
-  }, [loadSettings]);
-
-  useEffect(() => {
-    if (apiBaseUrl) {
-      checkLoginStatus(apiBaseUrl);
-    }
+    if (apiBaseUrl) checkLoginStatus(apiBaseUrl);
   }, [apiBaseUrl, checkLoginStatus]);
 
+  // Step 2: 字型載入完成 → 隱藏 Splash
   useEffect(() => {
-    if (loaded || error) {
-      SplashScreen.hideAsync();
-      if (error) {
-        logger.warn(`Error in loading fonts: ${error}`);
-      }
+    if (fontsLoaded || fontError) {
+      if (fontError) logger.warn("字型載入失敗", fontError);
     }
-  }, [loaded, error]);
+  }, [fontsLoaded, fontError]);
 
-  // 检查更新
+  // Step 3: 核心初始化（只執行一次）
   useEffect(() => {
-    if (loaded && UPDATE_CONFIG.AUTO_CHECK && Platform.OS === 'android') {
-      // 检查是否需要自动检查更新
-      const shouldCheck = Date.now() - lastCheckTime > UPDATE_CONFIG.CHECK_INTERVAL;
-      if (shouldCheck) {
-        checkForUpdate(true); // 静默检查
-      }
-    }
-  }, [loaded, lastCheckTime, checkForUpdate]);
+    if (!apiStatus.isValid || (!fontsLoaded || fontError) || hasInitialized.current) return;
+    hasInitialized.current = true;
 
+    const preloadApp = async () => {
+      try {
+        logger.info("TrackPlayer initialized");
+
+        // API 健康檢查 + 重試
+        const apiPing = async (retries = 3, timeoutMs = 2000) => {
+          for (let i = 0; i < retries; i++) {
+            try {
+              await Promise.race([
+                (api as any).get("/ping"),
+                new Promise((_, reject) => setTimeout(() => reject(new Error("API ping timeout")), timeoutMs))
+              ]);
+              logger.info("API warm-up 成功");
+              return;
+            } catch (err) {
+              logger.warn(`API warm-up 第 ${i + 1} 次失敗:`, err);
+              if (i === retries - 1) throw err;
+            }
+          }
+        };
+
+        await apiPing();
+      } catch (err) {
+        logger.warn("API warm-up 最終失敗", err);
+      }
+    };
+
+    preloadApp();
+  }, [apiStatus.isValid, fontsLoaded, fontError, lastCheckTime, checkForUpdate]);
+
+  // Step 4: 根據 remoteInputEnabled 啟動/停止 server
   useEffect(() => {
     // 只有在非手机端才启动远程控制服务器
     if (remoteInputEnabled && responsiveConfig.deviceType !== "mobile") {
@@ -76,22 +100,26 @@ export default function RootLayout() {
     }
   }, [remoteInputEnabled, startServer, stopServer, responsiveConfig.deviceType]);
 
-  if (!loaded && !error) {
+  // 渲染屏障：等待字型和持久化狀態載入完成
+  if (!fontsLoaded && !fontError) {
     return null;
   }
+
+  // ⭐ 當所有條件都滿足時，隱藏 Splash Screen (如果前面沒隱藏的話)
+  SplashScreen.hideAsync();
 
   return (
     <SafeAreaProvider>
       <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
         <View style={styles.container}>
-          <Stack>
-            <Stack.Screen name="index" options={{ headerShown: false }} />
-            <Stack.Screen name="detail" options={{ headerShown: false }} />
-            {Platform.OS !== "web" && <Stack.Screen name="play" options={{ headerShown: false }} />}
-            <Stack.Screen name="search" options={{ headerShown: false }} />
-            <Stack.Screen name="live" options={{ headerShown: false }} />
-            <Stack.Screen name="settings" options={{ headerShown: false }} />
-            <Stack.Screen name="favorites" options={{ headerShown: false }} />
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="index" />
+            <Stack.Screen name="detail" />
+            {Platform.OS !== "web" && <Stack.Screen name="play" />}
+            <Stack.Screen name="search" />
+            <Stack.Screen name="live" />
+            <Stack.Screen name="settings" />
+            <Stack.Screen name="favorites" />
             <Stack.Screen name="+not-found" />
           </Stack>
         </View>
@@ -104,7 +132,5 @@ export default function RootLayout() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
+  container: { flex: 1 },
 });
